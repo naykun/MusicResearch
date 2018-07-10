@@ -9,3 +9,10 @@ python3 convert_dir_to_note_sequences.py \
     --log=INFO
 
 ```
+
+prerequisite:
+```
+tensorflow
+protobuf
+pretty-midi
+```
