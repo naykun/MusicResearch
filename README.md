@@ -10,9 +10,18 @@ python3 convert_dir_to_note_sequences.py \
 
 ```
 
-prerequisite:
+prerequisite
+
 ```
 tensorflow
 protobuf
 pretty-midi
 ```
+model
+
+```
+
+```
+
+
+
