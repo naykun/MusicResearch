@@ -233,8 +233,8 @@ def get_build_graph_fn(mode, config, sequence_example_file_paths=None):
       inputs, labels, lengths = magenta.common.get_padded_batch(
           sequence_example_file_paths, hparams.batch_size, input_size,
           shuffle=mode == 'train')
-      #import import ipdb
-      #ipdb.set_trace()
+      import ipdb
+      ipdb.set_trace()
 
     elif mode == 'generate':
       inputs = tf.placeholder(tf.float32, [hparams.batch_size, None,

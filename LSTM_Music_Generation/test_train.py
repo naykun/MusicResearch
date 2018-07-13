@@ -10,39 +10,33 @@ import random
 import sys
 import io
 
-path = get_file('nietzsche.txt', origin='https://s3.amazonaws.com/text-datasets/nietzsche.txt')
-with io.open(path, encoding='utf-8') as f:
-    text = f.read().lower()
-print('corpus length:', len(text))
+import tensorflow as tf
 
-chars = sorted(list(set(text)))
-print('total chars:', len(chars))
-char_indices = dict((c, i) for i, c in enumerate(chars))
-indices_char = dict((i, c) for i, c in enumerate(chars))
 
-# cut the text in semi-redundant sequences of maxlen characters
-maxlen = 40
-step = 3
-sentences = []
-next_chars = []
-for i in range(0, len(text) - maxlen, step):
-    sentences.append(text[i: i + maxlen])
-    next_chars.append(text[i + maxlen])
-print('nb sequences:', len(sentences))
+import magenta
 
-print('Vectorization...')
-x = np.zeros((len(sentences), maxlen, len(chars)), dtype=np.bool)
-y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
-for i, sentence in enumerate(sentences):
-    for t, char in enumerate(sentence):
-        x[i, t, char_indices[char]] = 1
-    y[i, char_indices[next_chars[i]]] = 1
 
+inputs, labels, lengths = None, None, None
+
+sequence_example_file_paths = ['sequence_examples/training_melodies.tfrecord']
+hparams_batch_size = 64
+input_size = 74
+mode = 'train'
+
+inputs, labels, lengths = magenta.common.get_padded_batch(
+        sequence_example_file_paths, hparams_batch_size, input_size,
+        shuffle=mode == 'train')
+
+#import ipdb
+#ipdb.set_trace()
+
+x = inputs
+y = labels
 
 # build the model: a single LSTM
 print('Build model...')
 model = Sequential()
-model.add(LSTM(128, input_shape=(maxlen, len(chars))))
+model.add(LSTM(128, input_shape=(64, len(chars))   ))
 model.add(Dense(len(chars)))
 model.add(Activation('softmax'))
 
@@ -97,3 +91,4 @@ model.fit(x, y,
           batch_size=128,
           epochs=60,
           callbacks=[print_callback])
+
