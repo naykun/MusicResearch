@@ -1,3 +1,10 @@
+LSTM_Music_Generation/datasets 
+LSTM_Music_Generation/generated 
+LSTM_Music_Generation/logdir 
+LSTM_Music_Generation/RNN_Melody_Weights 
+LSTM_Music_Generation/sequence_examples
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
