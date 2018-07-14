@@ -21,9 +21,9 @@ import os
 
 # internal imports
 import tensorflow as tf
-import magenta
+# import magenta
 
-from magenta.models.melody_rnn import melody_rnn_config_flags
+# from magenta.models.melody_rnn import melody_rnn_config_flags
 
 import dag_pipeline
 import melody_pipelines

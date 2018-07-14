@@ -15,6 +15,7 @@
 
 import math
 import tensorflow as tf
+from keras import backend as K
 
 QUEUE_CAPACITY = 500
 SHUFFLE_MIN_AFTER_DEQUEUE = QUEUE_CAPACITY // 5
@@ -165,17 +166,16 @@ def flatten_maybe_padded_sequences(maybe_padded_sequences, lengths=None):
   def flatten_unpadded_sequences():
     # The sequences are equal length, so we should just flatten over the first
     # two dimensions.
-    return tf.reshape(maybe_padded_sequences,
+    return K.tf.reshape(maybe_padded_sequences,
                       [-1] + maybe_padded_sequences.shape.as_list()[2:])
 
   if lengths is None:
     return flatten_unpadded_sequences()
 
   def flatten_padded_sequences():
-    indices = tf.where(tf.sequence_mask(lengths))
-    return tf.gather_nd(maybe_padded_sequences, indices)
-
-  return tf.cond(
-      tf.equal(tf.reduce_min(lengths), tf.shape(maybe_padded_sequences)[1]),
+    indices = K.tf.where(K.tf.sequence_mask(lengths))
+    return K.tf.gather_nd(maybe_padded_sequences, indices)
+  return K.tf.cond(
+      K.tf.equal(K.tf.reduce_min(lengths), K.tf.shape(maybe_padded_sequences)[1]),
       flatten_unpadded_sequences,
       flatten_padded_sequences)
