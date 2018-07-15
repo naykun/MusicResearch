@@ -5,9 +5,10 @@ from keras.layers import Dense,Activation,Dropout,Input,LSTM,Reshape,Lambda,Repe
 from keras.initializers import glorot_uniform
 from keras.utils import to_categorical
 
-from keras.optimizers import Adam
+from keras.optimizers import Adam, RMSprop
 from keras import backend as K
 from keras.callbacks import TensorBoard
+from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 
 import numpy as np
 
@@ -30,6 +31,8 @@ tf.app.flags.DEFINE_integer('epochs', 100,
                             'Epochs.')
 tf.app.flags.DEFINE_string('sequence_example_dir', '',
                            'The directory of sequence example for training')                      
+tf.app.flags.DEFINE_boolean('eval', False,
+                           'Evaluate the model.')  
 
 def check():
     if(FLAGS.sequence_example_dir == ''):
@@ -37,8 +40,8 @@ def check():
         return False
     return True
 
-def getmodel(input, lengths, layer_size, notes_range):
-    LSTM_cell = LSTM(layer_size,return_sequences = True)
+def get_train_model(input, lengths, layer_size, notes_range):
+    LSTM_cell = LSTM(layer_size, return_sequences = True)
     tddensor = TimeDistributed(Dense(notes_range, activation='softmax'))
     X = Input(tensor =input)
 
@@ -61,6 +64,24 @@ def getmodel(input, lengths, layer_size, notes_range):
     model = Model(inputs=[X],outputs=outputs)
     return model
 
+
+def lr_schedule(epoch):
+    #Learning Rate Schedule
+    lr = 1e-1
+    epochs = FLAGS.epochs
+    if epoch >= epochs * 0.9:
+        lr *= 0.5e-3
+    elif epoch >= epochs * 0.8:
+        lr *= 1e-3
+    elif epoch >= epochs * 0.6:
+        lr *= 1e-2
+    elif epoch >= epochs * 0.4:
+        lr *= 1e-1
+    print('Learning rate: ', lr)
+
+    lr = 1e-3
+    return lr
+
 def train():
     # Load parameters
     layer_size = FLAGS.layer_size
@@ -73,10 +94,15 @@ def train():
   
     inputs, labels, lengths = get_padded_batch(sequence_example_file_paths, batch_size, notes_range,shuffle = True )
 
-    model = getmodel(inputs,lengths, layer_size = layer_size, notes_range = notes_range)
+    model = get_train_model(inputs,lengths, layer_size = layer_size, notes_range = notes_range)
     labels = tf.one_hot(labels, notes_range)
-    opt = Adam(lr = 0.01, beta_1 = 0.9, beta_2=0.999, decay=0.01)
-    model.compile(optimizer = opt,loss='categorical_crossentropy',metrics=['accuracy'],target_tensors=[labels])
+
+    optimizer = RMSprop(lr=lr_schedule(0))
+    #optimizer = Adam(lr = 0.01, beta_1 = 0.9, beta_2=0.999, decay=0.01)
+    model.compile(  optimizer = optimizer,
+                    loss='categorical_crossentropy',
+                    metrics=['accuracy'],
+                    target_tensors=[labels])
     model.summary()
     # m = 60
     # a0 = np.zeros((m,layer_size))
@@ -86,15 +112,140 @@ def train():
     threads = tf.train.start_queue_runners(sess, coord)
 
     dataset_size = count_records(sequence_example_file_paths)
-    model.fit(  epochs=epochs,
-                steps_per_epoch=int(np.ceil( dataset_size/ float(batch_size))),)
     
     exp_name = 'LayerSize%d_BatchSize%d_Epochs%d' % (layer_size, batch_size, epochs)
     model_log_dir = os.path.join('logdir',exp_name)
-    os.makedirs(model_log_dir)
-    model_name = os.path.join(model_log_dir, exp_name+'.h5')
-    model.save(model_name)
+    
 
+    tb_log_dir = os.path.join('TB_logdir',exp_name)
+    from keras.callbacks import TensorBoard
+    tb_callbacks = TensorBoard(log_dir = tb_log_dir)
+
+    lr_scheduler = LearningRateScheduler(lr_schedule)
+    history_callback = model.fit(  
+                epochs=epochs,
+                callbacks=[tb_callbacks, lr_scheduler],
+                steps_per_epoch=int(np.ceil( dataset_size/ float(batch_size))),)
+
+
+    acc_history = history_callback.history["acc"]
+    max_acc = str(np.max(acc_history))
+    max_acc_log_dir = os.path.join('Max_Acc_logdir','Max_Acc.txt')
+    try:
+        os.makedirs('Max_Acc_logdir')
+    except:
+        pass
+    print('Max accuracy:',max_acc)
+    print(exp_name + '\t' + str(layer_size) + '\t' + str(batch_size) 
+            + '\t' + str(epochs) + '\t' + max_acc, file = open(max_acc_log_dir, 'a'))
+
+    try:
+        os.makedirs(model_log_dir)
+    except:
+        pass
+    model_weights_dir = os.path.join(model_log_dir, exp_name+'_weights.h5')
+    model.save_weights(model_weights_dir)
+
+    # Clean up the TF session.
+    coord.request_stop()
+    coord.join(threads)
+    K.clear_session()
+
+'''
+def get_evaluate_model(LSTM_cell,densor,n_values=78, n_a =64, Ty = 100):
+    
+    x0 = Input(shape=(1,n_values))
+
+    a0 = Input(shape=(n_a,),name='a0')
+    c0 = Input(shape=(n_a,),name='c0')
+
+    a = a0
+    c = c0   
+    x = x0
+
+    outputs = []
+
+    for t in range(Ty):
+
+        a, _ ,c = LSTM_cell(x,initial_state = [a,c], train)
+
+        out = densor(a)
+
+        outputs.append(out)
+
+        x = Lambda(onehot)(out)
+
+    inference_model = Model(inputs = [x0,a0,c0],outputs = outputs)
+
+    return inference_model
+'''
+'''
+def evaluate():
+    # Load parameters
+    layer_size = FLAGS.layer_size
+    batch_size = FLAGS.batch_size
+    notes_range = FLAGS.notes_range
+    epochs = FLAGS.epochs
+    sequence_example_file_paths = [FLAGS.sequence_example_dir]
+
+    exp_name = 'LayerSize%d_BatchSize%d_Epochs%d' % (layer_size, batch_size, epochs)
+    model_log_dir = os.path.join('logdir',exp_name)
+    model_weights_dir = os.path.join(model_log_dir, exp_name+'_weights.h5')
+
+    sess = K.get_session()
+    
+    inputs, labels, lengths = get_padded_batch(sequence_example_file_paths, batch_size, notes_range,shuffle = True )
+
+    model = get_train_model(inputs,lengths, layer_size = layer_size, notes_range = notes_range)
+    labels = tf.one_hot(labels, notes_range)
+    optimizer = RMSprop(lr=lr_schedule(0))
+    model.compile(  optimizer = optimizer,
+                    loss='categorical_crossentropy',
+                    metrics=['accuracy'],
+                    target_tensors=[labels])
+
+    model.load_weights(model_weights_dir)
+    model.trainable = False
+    model.summary()
+
+    # m = 60
+    # a0 = np.zeros((m,layer_size))
+    # c0 = np.zeros((m,layer_size))
+    # to be modified
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(sess, coord)
+
+    dataset_size = count_records(sequence_example_file_paths)
+
+    exp_name = 'LayerSize%d_BatchSize%d_Epochs%d' % (layer_size, batch_size, epochs)
+    model_log_dir = os.path.join('logdir',exp_name)
+    
+    tb_log_dir = os.path.join('TB_logdir',exp_name)
+
+    from keras.callbacks import TensorBoard
+    tb_callbacks = TensorBoard(log_dir = tb_log_dir)
+
+    history_callback = model.fit(  
+                epochs=epochs,
+                callbacks=[tb_callbacks],
+                steps_per_epoch=int(np.ceil( dataset_size/ float(batch_size))),)
+
+    acc_history = history_callback.history["acc"]
+
+    max_acc = str(np.max(acc_history))
+    print('Max accuracy:',max_acc)
+    print(exp_name + '\t' + str(layer_size) + '\t' + str(batch_size) 
+            + '\t' + str(epochs) + '\t' + max_acc)
+
+    # Clean up the TF session.
+    coord.request_stop()
+    coord.join(threads)
+    K.clear_session()
+'''
 if __name__ == '__main__':
     if(check()):
-        train()
+        if(FLAGS.eval == True):
+            evaluate()
+        else:
+            train()
+
