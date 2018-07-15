@@ -29,8 +29,10 @@ tf.app.flags.DEFINE_integer('batch_size', 32,
                             'Batch size.')
 tf.app.flags.DEFINE_integer('epochs', 100,
                             'Epochs.')
+tf.app.flags.DEFINE_integer('window_size', 0,
+                            'Embedding Length.')
 tf.app.flags.DEFINE_string('sequence_example_dir', '',
-                           'The directory of sequence example for training')                      
+                           'The directory of sequence example for training.')                      
 tf.app.flags.DEFINE_boolean('eval', False,
                            'Evaluate the model.')  
 
@@ -53,14 +55,18 @@ def get_train_model(input, lengths, layer_size, notes_range):
 
     lstm = LSTM_cell(X)
     outputs = tddensor(lstm)
-    # for t in range(Tx):
-    #     x = Lambda(lambda x: x[:,t,:])(X)
-    #     x = reshapor(x)
-    #     a, _, c = LSTM_cell(x,initial_state=[a,c])
-    #     out = densor(a)
-    #     outputs.append(out)
-    # logits_flat = flatten_maybe_padded_sequences(outputs, lengths)
-    # import ipdb; ipdb.set_trace()
+    
+    '''
+    for t in range(Tx):
+         x = Lambda(lambda x: x[:,t,:])(X)
+         x = reshapor(x)
+         a, _, c = LSTM_cell(x,initial_state=[a,c])
+         out = densor(a)
+         outputs.append(out)
+    logits_flat = flatten_maybe_padded_sequences(outputs, lengths
+    import ipdb; ipdb.set_trace()
+    '''
+    
     model = Model(inputs=[X],outputs=outputs)
     return model
 
@@ -151,35 +157,15 @@ def train():
     coord.join(threads)
     K.clear_session()
 
-'''
-def get_evaluate_model(LSTM_cell,densor,n_values=78, n_a =64, Ty = 100):
-    
-    x0 = Input(shape=(1,n_values))
 
-    a0 = Input(shape=(n_a,),name='a0')
-    c0 = Input(shape=(n_a,),name='c0')
+if __name__ == '__main__':
+    if(check()):
+        if(FLAGS.eval == True):
+            evaluate()
+        else:
+            train()
 
-    a = a0
-    c = c0   
-    x = x0
 
-    outputs = []
-
-    for t in range(Ty):
-
-        a, _ ,c = LSTM_cell(x,initial_state = [a,c], train)
-
-        out = densor(a)
-
-        outputs.append(out)
-
-        x = Lambda(onehot)(out)
-
-    inference_model = Model(inputs = [x0,a0,c0],outputs = outputs)
-
-    return inference_model
-'''
-'''
 def evaluate():
     # Load parameters
     layer_size = FLAGS.layer_size
@@ -241,11 +227,3 @@ def evaluate():
     coord.request_stop()
     coord.join(threads)
     K.clear_session()
-'''
-if __name__ == '__main__':
-    if(check()):
-        if(FLAGS.eval == True):
-            evaluate()
-        else:
-            train()
-
