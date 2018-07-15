@@ -91,7 +91,7 @@ def train():
     
     exp_name = 'LayerSize%d_BatchSize%d_Epochs%d' % (layer_size, batch_size, epochs)
     model_log_dir = os.path.join('logdir',exp_name)
-    os.mkdir(model_log_dir)
+    os.makedirs(model_log_dir)
     model_name = os.path.join(model_log_dir, exp_name+'.h5')
     model.save(model_name)
 

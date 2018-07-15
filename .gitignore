@@ -1,5 +1,6 @@
 LSTM_Music_Generation/tmp 
 *.tfrecord
+LSTM_Music_Generation/logdir
 
 
 # Byte-compiled / optimized / DLL files
