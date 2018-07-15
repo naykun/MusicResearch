@@ -7,12 +7,15 @@ from keras.utils import to_categorical
 
 from keras.optimizers import Adam
 from keras import backend as K
+from keras.callbacks import TensorBoard
 
 import numpy as np
 
 import tensorflow as tf
 
 from sequence_example_lib import *
+
+import os
 
 
 FLAGS = tf.app.flags.FLAGS
@@ -85,6 +88,12 @@ def train():
     dataset_size = count_records(sequence_example_file_paths)
     model.fit(  epochs=epochs,
                 steps_per_epoch=int(np.ceil( dataset_size/ float(batch_size))),)
+    
+    exp_name = 'LayerSize%d_BatchSize%d_Epochs%d' % (layer_size, batch_size, epochs)
+    model_log_dir = os.path.join('logdir',exp_name)
+    os.mkdir(model_log_dir)
+    model_name = os.path.join(model_log_dir, exp_name+'.h5')
+    model.save(model_name)
 
 if __name__ == '__main__':
     if(check()):
