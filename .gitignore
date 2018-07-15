@@ -1,3 +1,7 @@
+LSTM_Music_Generation/tmp 
+*.tfrecord
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
