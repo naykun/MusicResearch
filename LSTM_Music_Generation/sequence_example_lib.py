@@ -15,10 +15,10 @@
 
 import math
 import tensorflow as tf
+import numpy as np
 
 QUEUE_CAPACITY = 500
 SHUFFLE_MIN_AFTER_DEQUEUE = QUEUE_CAPACITY // 5
-
 
 def make_sequence_example(inputs, labels):
   """Returns a SequenceExample for the given inputs and labels.
@@ -179,3 +179,28 @@ def flatten_maybe_padded_sequences(maybe_padded_sequences, lengths=None):
       tf.equal(tf.reduce_min(lengths), tf.shape(maybe_padded_sequences)[1]),
       flatten_unpadded_sequences,
       flatten_padded_sequences)
+
+#OYZH added, For numpy result
+def get_numpy_from_tf_sequence_example (batchsize, input_size, sequence_example_file_paths, shuffle = False):
+
+    batchsize = count_records(sequence_example_file_paths)
+    inputs, labels, lengths = get_padded_batch(
+        sequence_example_file_paths, batchsize, input_size,
+        shuffle=shuffle)
+    # import ipdb; ipdb.set_trace()
+    with tf.Session() as sess:
+        init_op = tf.global_variables_initializer()
+        sess.run(init_op)
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(coord=coord)
+        try:
+            inputs, labels, lengths = sess.run([inputs, labels, lengths])
+            print('inputs', np.shape(inputs), type(inputs), np.argmax(inputs[0], axis=1)[0:10])
+            print('labels', np.shape(labels), type(labels), labels[0][:10])
+        except tf.errors.OutOfRangeError:
+            print('Done nothing')
+        finally:
+            coord.request_stop()
+        coord.request_stop()
+        coord.join(threads)
+        return inputs, labels, lengths
