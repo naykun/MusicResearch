@@ -147,9 +147,9 @@ def train():
     tb_callbacks = TensorBoard(log_dir = tb_log_dir)
     # Y_train.split(maxlen-embedding_len,axis=1)
     lr_scheduler = LearningRateScheduler(lr_schedule)
-    history_callback = model.fit([X_train, a0, c0], np.split(Y_train,maxlen-embedding_len,axis=1), batch_size=batch_size,  
+    history_callback = model.fit([X_train, a0, c0], np.split(Y_train,Y_train.shape[1],axis=1), batch_size=batch_size,  
                 epochs=epochs,
-                callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0, c0],np.split(Y_val,maxlen-embedding_len,axis=1)),
+                callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0, c0],np.split(Y_val,Y_val.shape[1],axis=1)),
                 steps_per_epoch=int(np.ceil( dataset_size/ float(batch_size))))
     acc_history = history_callback.history["acc"]
     max_acc = str(np.max(acc_history))
