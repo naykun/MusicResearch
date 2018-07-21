@@ -64,7 +64,7 @@ def get_train_model(layer_size,notes_range,embedding_len,maxlen):
     # outputs = tddensor(lstm)
     outputs = []
 
-    for t in range(maxlen-embedding_len):
+    for t in range(maxlen-embedding_len+1):
         x = Lambda(lambda x: x[:,t:t+embedding_len,:])(X)
         x = reshapor(x)
         if t==0:
