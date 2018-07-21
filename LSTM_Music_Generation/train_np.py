@@ -139,7 +139,7 @@ def train():
     a0_train = np.zeros((m_train,layer_size))
     c0_train = np.zeros((m_train,layer_size))
     
-    taset_size = count_records(val_sequence_example_file_paths)
+    val_dataset_size = count_records(val_sequence_example_file_paths)
     
     m_val = val_dataset_size
     a0_val = np.zeros((m_val,layer_size))
