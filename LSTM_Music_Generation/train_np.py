@@ -129,15 +129,22 @@ def train():
                     loss='categorical_crossentropy',
                     metrics=['accuracy'])
     model.summary()
-    m = batch_size
-    a0 = np.zeros((m,layer_size))
-    c0 = np.zeros((m,layer_size))
     # to be modified
     #coord = tf.train.Coordinator()
     #threads = tf.train.start_queue_runners(sess, coord)
 
-    dataset_size = count_records(train_sequence_example_file_paths)
+    train_dataset_size = count_records(train_sequence_example_file_paths)
     
+    m_train = train_dataset_size
+    a0_train = np.zeros((m_train,layer_size))
+    c0_train = np.zeros((m_train,layer_size))
+    
+    taset_size = count_records(val_sequence_example_file_paths)
+    
+    m_val = val_dataset_size
+    a0_val = np.zeros((m_val,layer_size))
+    c0_val = np.zeros((m_val,layer_size))
+
     exp_name = 'LayerSize%d_BatchSize%d_Epochs%d' % (layer_size, batch_size, epochs)
     model_log_dir = os.path.join('logdir',exp_name)
     
@@ -149,9 +156,9 @@ def train():
     lr_scheduler = LearningRateScheduler(lr_schedule)
     Y_train = [np.squeeze(x) for x in np.split(Y_train,Y_train.shape[1],axis=1)]
     Y_val = [np.squeeze(x) for x in np.split(Y_val,Y_val.shape[1],axis=1)]
-    history_callback = model.fit([X_train, a0, c0], Y_train, batch_size=batch_size,  
+    history_callback = model.fit([X_train, a0_train, c0_train], Y_train, batch_size=batch_size,  
                 epochs=epochs,
-                callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0, c0],Y_val),
+                callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0_val, c0_val],Y_val),
                 steps_per_epoch=int(np.ceil( dataset_size/ float(batch_size))))
     acc_history = history_callback.history["acc"]
     max_acc = str(np.max(acc_history))
