@@ -42,32 +42,38 @@ def check():
         return False
     return True
 
-def get_train_model(input, lengths, layer_size, notes_range):
+def get_train_model(input, lengths,maxlen,embedding_len, layer_size, notes_range):
+    reshapor = Reshape(layer_size)
     LSTM_cell = LSTM(layer_size, return_sequences = True)
     tddensor = TimeDistributed(Dense(notes_range, activation='softmax'))
     X = Input(tensor =input)
 
     # a0 = Input(shape=(layer_size,),name='a0') #LSTM acitvation value
     # c0 = Input(shape=(layer_size,),name='c0') #LSTM cell value
+    a0 = np.zeros((m,layer_size))
+    c0 = np.zeros((m,layer_size))
 
-    # a = a0
-    # c = c0
+    a = a0
+    c = c0
 
-    lstm = LSTM_cell(X)
-    outputs = tddensor(lstm)
+    # lstm = LSTM_cell(X)
+    # outputs = tddensor(lstm)
+    outputs = []
     
-    '''
-    for t in range(Tx):
-         x = Lambda(lambda x: x[:,t,:])(X)
-         x = reshapor(x)
-         a, _, c = LSTM_cell(x,initial_state=[a,c])
-         out = densor(a)
-         outputs.append(out)
-    logits_flat = flatten_maybe_padded_sequences(outputs, lengths
-    import ipdb; ipdb.set_trace()
-    '''
+    for t in range(maxlen-embedding_len):
+        x = Lambda(lambda x: x[:,t:t+embedding_len,:])(X)
+        x = reshapor(x)
+        if t==0:
+            a, _, c = LSTM_cell(x,initial_state=[a0,c0])
+        else:
+            a, _, c = LSTM_cell(x,initial_state=[a,c])
+        out = densor(a)
+        outputs.append(out)
+    # logits_flat = flatten_maybe_padded_sequences(outputs, lengths
+    # import ipdb; ipdb.set_trace()
     
-    model = Model(inputs=[X],outputs=outputs)
+    
+    model = Model(inputs=[X,a0,c0],outputs=outputs)
     return model
 
 
@@ -93,6 +99,7 @@ def train():
     layer_size = FLAGS.layer_size
     batch_size = FLAGS.batch_size
     notes_range = FLAGS.notes_range
+    window_size = FLAGS.window_size
     epochs = FLAGS.epochs
     sequence_example_file_paths = [FLAGS.sequence_example_dir]
 
@@ -100,7 +107,7 @@ def train():
   
     inputs, labels, lengths = get_padded_batch(sequence_example_file_paths, batch_size, notes_range,shuffle = True )
 
-    model = get_train_model(inputs,lengths, layer_size = layer_size, notes_range = notes_range)
+    model = get_train_model(inputs,lengths, maxlen, window_size,layer_size = layer_size, notes_range = notes_range)
     labels = tf.one_hot(labels, notes_range)
 
     optimizer = RMSprop(lr=lr_schedule(0))
@@ -172,6 +179,7 @@ def evaluate():
     batch_size = FLAGS.batch_size
     notes_range = FLAGS.notes_range
     epochs = FLAGS.epochs
+    window_size = FLAGS.window_size
     sequence_example_file_paths = [FLAGS.sequence_example_dir]
 
     exp_name = 'LayerSize%d_BatchSize%d_Epochs%d' % (layer_size, batch_size, epochs)
@@ -182,7 +190,7 @@ def evaluate():
     
     inputs, labels, lengths = get_padded_batch(sequence_example_file_paths, batch_size, notes_range,shuffle = True )
 
-    model = get_train_model(inputs,lengths, layer_size = layer_size, notes_range = notes_range)
+    model = get_train_model(inputs,lengths,maxlen, window_size, layer_size = layer_size, notes_range = notes_range)
     labels = tf.one_hot(labels, notes_range)
     optimizer = RMSprop(lr=lr_schedule(0))
     model.compile(  optimizer = optimizer,

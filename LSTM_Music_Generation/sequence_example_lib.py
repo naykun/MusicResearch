@@ -181,7 +181,7 @@ def flatten_maybe_padded_sequences(maybe_padded_sequences, lengths=None):
       flatten_padded_sequences)
 
 #OYZH added, For numpy result
-def get_numpy_from_tf_sequence_example (batchsize, input_size, sequence_example_file_paths, shuffle = False):
+def get_numpy_from_tf_sequence_example (input_size, sequence_example_file_paths, shuffle = False):
 
     batchsize = count_records(sequence_example_file_paths)
     inputs, labels, lengths = get_padded_batch(
