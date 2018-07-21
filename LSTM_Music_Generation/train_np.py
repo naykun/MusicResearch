@@ -47,7 +47,7 @@ def get_train_model(layer_size,notes_range,embedding_len,maxlen):
 
 
     reshapor = Reshape((1,notes_range*embedding_len))
-    LSTM_cell = LSTM(layer_size)
+    LSTM_cell = LSTM(layer_size, return_state = True)
     # tddensor = TimeDistributed(Dense(notes_range, activation='softmax'))
     densor = Dense(notes_range, activation='softmax')
     X = Input(shape=(maxlen,notes_range))
@@ -99,10 +99,6 @@ def lr_schedule(epoch):
     lr = 1e-3
     return lr
 
-def convert_to_one_hot(a):
-    b = np.zeros((a.size, a.max()+1))
-    b[np.arange(a.size),a] = 1
-    return b
 
 def train():
     # Load parameters
@@ -122,10 +118,11 @@ def train():
     X_val, labels_val, _ = get_numpy_from_tf_sequence_example(input_size=38,
                                     sequence_example_file_paths = val_sequence_example_file_paths,
                                     shuffle = False)
-    model,LSTM_cell,reshapor,densor = get_train_model(layer_size = layer_size, notes_range = notes_range,embedding_len=embedding_len,max_len=maxlen)
-    Y_train = convert_to_one_hot(labels_train)
-    Y_val = convert_to_one_hot(labels_val)
-
+    model,LSTM_cell,reshapor,densor = get_train_model(layer_size = layer_size, notes_range = notes_range,embedding_len=embedding_len,maxlen=maxlen)
+    Y_train = to_categorical(labels_train,notes_range)
+    Y_val = to_categorical(labels_val,notes_range)
+    print(Y_train.shape)
+    # import ipdb; ipdb.set_trace()
     optimizer = RMSprop(lr=lr_schedule(0))
     #optimizer = Adam(lr = 0.01, beta_1 = 0.9, beta_2=0.999, decay=0.01)
     model.compile(  optimizer = optimizer,
@@ -136,10 +133,10 @@ def train():
     a0 = np.zeros((m,layer_size))
     c0 = np.zeros((m,layer_size))
     # to be modified
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(sess, coord)
+    #coord = tf.train.Coordinator()
+    #threads = tf.train.start_queue_runners(sess, coord)
 
-    dataset_size = count_records(sequence_example_file_paths)
+    dataset_size = count_records(train_sequence_example_file_paths)
     
     exp_name = 'LayerSize%d_BatchSize%d_Epochs%d' % (layer_size, batch_size, epochs)
     model_log_dir = os.path.join('logdir',exp_name)
@@ -148,11 +145,11 @@ def train():
     tb_log_dir = os.path.join('TB_logdir',exp_name)
     from keras.callbacks import TensorBoard
     tb_callbacks = TensorBoard(log_dir = tb_log_dir)
-
+    # Y_train.split(maxlen-embedding_len,axis=1)
     lr_scheduler = LearningRateScheduler(lr_schedule)
-    history_callback = model.fit([X_train, a0, c0], list(Y_train), batch_size=batch_size,  
+    history_callback = model.fit([X_train, a0, c0], np.split(Y_train,maxlen-embedding_len,axis=1), batch_size=batch_size,  
                 epochs=epochs,
-                callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0, c0], list(Y_val)),
+                callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0, c0],np.split(Y_val,maxlen-embedding_len,axis=1)),
                 steps_per_epoch=int(np.ceil( dataset_size/ float(batch_size))))
     acc_history = history_callback.history["acc"]
     max_acc = str(np.max(acc_history))
@@ -173,9 +170,9 @@ def train():
     model.save_weights(model_weights_dir)
 
     # Clean up the TF session.
-    coord.request_stop()
-    coord.join(threads)
-    K.clear_session()
+    # coord.request_stop()
+    # coord.join(threads)
+    # K.clear_session()
     
     return LSTM_cell,reshapor,densor
 
