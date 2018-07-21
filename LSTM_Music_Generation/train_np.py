@@ -159,7 +159,7 @@ def train():
     history_callback = model.fit([X_train, a0_train, c0_train], Y_train, batch_size=batch_size,  
                 epochs=epochs,
                 callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0_val, c0_val],Y_val),
-                steps_per_epoch=int(np.ceil( dataset_size/ float(batch_size))))
+                steps_per_epoch=int(np.ceil( train_dataset_size/ float(batch_size))))
     acc_history = history_callback.history["acc"]
     max_acc = str(np.max(acc_history))
     max_acc_log_dir = os.path.join('Max_Acc_logdir','Max_Acc.txt')
