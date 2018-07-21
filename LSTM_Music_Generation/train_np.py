@@ -63,7 +63,7 @@ def get_train_model(layer_size,notes_range,embedding_len,maxlen):
     # lstm = LSTM_cell(X)
     # outputs = tddensor(lstm)
     outputs = []
-    
+
     for t in range(maxlen-embedding_len):
         x = Lambda(lambda x: x[:,t:t+embedding_len,:])(X)
         x = reshapor(x)
@@ -74,9 +74,9 @@ def get_train_model(layer_size,notes_range,embedding_len,maxlen):
         out = densor(a)
         outputs.append(out)
     # logits_flat = flatten_maybe_padded_sequences(outputs, lengths
-    # import ipdb; ipdb.set_trace()     
-    
-    
+    # import ipdb; ipdb.set_trace()
+
+
     model = Model(inputs=[X,a0,c0],outputs=outputs)
 
     return model,LSTM_cell,reshapor,densor
@@ -111,7 +111,7 @@ def train():
 
     train_sequence_example_file_paths = [FLAGS.sequence_example_train_dir]
     val_sequence_example_file_paths = [FLAGS.sequence_example_val_dir]
-  
+
     X_train, labels_train, _ = get_numpy_from_tf_sequence_example(input_size=38,
                                     sequence_example_file_paths = train_sequence_example_file_paths,
                                     shuffle = False)
@@ -123,7 +123,7 @@ def train():
     Y_val = to_categorical(labels_val,notes_range)
     print(Y_train.shape)
     # import ipdb; ipdb.set_trace()
-    optimizer = RMSprop(lr=lr_schedule(0))
+    optimizer = Adam(lr=lr_schedule(0), beta_1 = 0.9, beta_2=0.999, decay=0.01)
     #optimizer = Adam(lr = 0.01, beta_1 = 0.9, beta_2=0.999, decay=0.01)
     model.compile(  optimizer = optimizer,
                     loss='categorical_crossentropy',
