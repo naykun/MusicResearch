@@ -34,9 +34,9 @@ tf.app.flags.DEFINE_integer('epochs', 10,
                             'Epochs.')
 tf.app.flags.DEFINE_integer('embedding_len', 1,
                             'Embedding Length.')
-tf.app.flags.DEFINE_string('sequence_example_train_dir', 'D:\\TsinghuaResearch\\Wikifonia_basic_rnn_sequence_examples\\train',
+tf.app.flags.DEFINE_string('sequence_example_train_dir', '/unsullied/sharefs/ouyangzhihao/DataRoot/AAAI/yk/Wikifonia_basic_rnn_sequence_examples/train',
                            'The directory of sequence example for training.')
-tf.app.flags.DEFINE_string('sequence_example_val_dir', 'D:\\TsinghuaResearch\\Wikifonia_basic_rnn_sequence_examples\\eval',
+tf.app.flags.DEFINE_string('sequence_example_val_dir', '/unsullied/sharefs/ouyangzhihao/DataRoot/AAAI/yk/Wikifonia_basic_rnn_sequence_examples/val',
                            'The directory of sequence example for validation.')                         
 tf.app.flags.DEFINE_integer('maxlen', 511,
                             'max timesteps')
