@@ -1,3 +1,4 @@
+#coding:utf-8
 import keras
 from keras.models import load_model,Model
 from keras.layers import Dense,Activation,Dropout,Input,LSTM,Reshape,Lambda,RepeatVector,TimeDistributed
@@ -29,15 +30,15 @@ tf.app.flags.DEFINE_integer('batch_size', 32,
                             'Batch size.')
 tf.app.flags.DEFINE_integer('Ty', 100,
                             'The number of hidden states.')
-tf.app.flags.DEFINE_integer('epochs', 100,
+tf.app.flags.DEFINE_integer('epochs', 10,
                             'Epochs.')
-tf.app.flags.DEFINE_integer('embedding_len', 0,
+tf.app.flags.DEFINE_integer('embedding_len', 1,
                             'Embedding Length.')
-tf.app.flags.DEFINE_string('sequence_example_train_dir', '',
+tf.app.flags.DEFINE_string('sequence_example_train_dir', 'D:\\TsinghuaResearch\\Wikifonia_basic_rnn_sequence_examples\\train',
                            'The directory of sequence example for training.')
-tf.app.flags.DEFINE_string('sequence_example_val_dir', '',
+tf.app.flags.DEFINE_string('sequence_example_val_dir', 'D:\\TsinghuaResearch\\Wikifonia_basic_rnn_sequence_examples\\eval',
                            'The directory of sequence example for validation.')                         
-tf.app.flags.DEFINE_integer('maxlen', 100,
+tf.app.flags.DEFINE_integer('maxlen', 511,
                             'max timesteps')
 
 
@@ -116,10 +117,10 @@ def train():
     val_sequence_example_file_paths = [FLAGS.sequence_example_val_dir]
   
     X_train, labels_train, _ = get_numpy_from_tf_sequence_example(input_size=38,
-                                    sequence_example_file_paths = sequence_example_file_paths,
+                                    sequence_example_file_paths = train_sequence_example_file_paths,
                                     shuffle = False)
     X_val, labels_val, _ = get_numpy_from_tf_sequence_example(input_size=38,
-                                    sequence_example_file_paths = sequence_example_file_paths,
+                                    sequence_example_file_paths = val_sequence_example_file_paths,
                                     shuffle = False)
     model,LSTM_cell,reshapor,densor = get_train_model(layer_size = layer_size, notes_range = notes_range,embedding_len=embedding_len,max_len=maxlen)
     Y_train = convert_to_one_hot(labels_train)
@@ -149,9 +150,9 @@ def train():
     tb_callbacks = TensorBoard(log_dir = tb_log_dir)
 
     lr_scheduler = LearningRateScheduler(lr_schedule)
-    history_callback = model.fit([X_train, a0, c0], list(Y_train), batch_size=batch_size  
+    history_callback = model.fit([X_train, a0, c0], list(Y_train), batch_size=batch_size,  
                 epochs=epochs,
-                callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0, c0], list(Y_val))
+                callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0, c0], list(Y_val)),
                 steps_per_epoch=int(np.ceil( dataset_size/ float(batch_size))))
     acc_history = history_callback.history["acc"]
     max_acc = str(np.max(acc_history))
