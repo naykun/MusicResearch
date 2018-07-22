@@ -34,9 +34,9 @@ tf.app.flags.DEFINE_integer('epochs', 10,
                             'Epochs.')
 tf.app.flags.DEFINE_integer('embedding_len', 1,
                             'Embedding Length.')
-tf.app.flags.DEFINE_string('sequence_example_train_dir', 'D:\\TsinghuaResearch\\Wikifonia_basic_rnn_sequence_examples\\train',
+tf.app.flags.DEFINE_string('sequence_example_train_dir', '/unsullied/sharefs/ouyangzhihao/DataRoot/AAAI/yk/Wikifonia_basic_rnn_sequence_examples/train/training_melodies.tfrecord',
                            'The directory of sequence example for training.')
-tf.app.flags.DEFINE_string('sequence_example_val_dir', 'D:\\TsinghuaResearch\\Wikifonia_basic_rnn_sequence_examples\\eval',
+tf.app.flags.DEFINE_string('sequence_example_val_dir', '/unsullied/sharefs/ouyangzhihao/DataRoot/AAAI/yk/Wikifonia_basic_rnn_sequence_examples/val/eval_melodies.tfrecord',
                            'The directory of sequence example for validation.')                         
 tf.app.flags.DEFINE_integer('maxlen', 511,
                             'max timesteps')
@@ -47,7 +47,7 @@ def get_train_model(layer_size,notes_range,embedding_len,maxlen):
 
 
     reshapor = Reshape((1,notes_range*embedding_len))
-    LSTM_cell = LSTM(layer_size)
+    LSTM_cell = LSTM(layer_size, return_state = True)
     # tddensor = TimeDistributed(Dense(notes_range, activation='softmax'))
     densor = Dense(notes_range, activation='softmax')
     X = Input(shape=(maxlen,notes_range))
@@ -64,7 +64,7 @@ def get_train_model(layer_size,notes_range,embedding_len,maxlen):
     # outputs = tddensor(lstm)
     outputs = []
 
-    for t in range(maxlen-embedding_len):
+    for t in range(maxlen-embedding_len+1):
         x = Lambda(lambda x: x[:,t:t+embedding_len,:])(X)
         x = reshapor(x)
         if t==0:
@@ -99,10 +99,6 @@ def lr_schedule(epoch):
     lr = 1e-3
     return lr
 
-def convert_to_one_hot(a):
-    b = np.zeros((a.size, a.max()+1))
-    b[np.arange(a.size),a] = 1
-    return b
 
 def train():
     # Load parameters
@@ -123,24 +119,32 @@ def train():
                                     sequence_example_file_paths = val_sequence_example_file_paths,
                                     shuffle = False)
     model,LSTM_cell,reshapor,densor = get_train_model(layer_size = layer_size, notes_range = notes_range,embedding_len=embedding_len,maxlen=maxlen)
-    Y_train = convert_to_one_hot(labels_train)
-    Y_val = convert_to_one_hot(labels_val)
-
-    # optimizer = RMSprop()
+    Y_train = to_categorical(labels_train,notes_range)
+    Y_val = to_categorical(labels_val,notes_range)
+    print(Y_train.shape)
+    # import ipdb; ipdb.set_trace()
     optimizer = Adam(lr=lr_schedule(0), beta_1 = 0.9, beta_2=0.999, decay=0.01)
+    #optimizer = Adam(lr = 0.01, beta_1 = 0.9, beta_2=0.999, decay=0.01)
     model.compile(  optimizer = optimizer,
                     loss='categorical_crossentropy',
                     metrics=['accuracy'])
     model.summary()
-    m = batch_size
-    a0 = np.zeros((m,layer_size))
-    c0 = np.zeros((m,layer_size))
     # to be modified
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(sess, coord)
+    #coord = tf.train.Coordinator()
+    #threads = tf.train.start_queue_runners(sess, coord)
 
-    dataset_size = count_records(sequence_example_file_paths)
+    train_dataset_size = count_records(train_sequence_example_file_paths)
     
+    m_train = train_dataset_size
+    a0_train = np.zeros((m_train,layer_size))
+    c0_train = np.zeros((m_train,layer_size))
+    
+    val_dataset_size = count_records(val_sequence_example_file_paths)
+    
+    m_val = val_dataset_size
+    a0_val = np.zeros((m_val,layer_size))
+    c0_val = np.zeros((m_val,layer_size))
+
     exp_name = 'LayerSize%d_BatchSize%d_Epochs%d' % (layer_size, batch_size, epochs)
     model_log_dir = os.path.join('logdir',exp_name)
     
@@ -148,12 +152,14 @@ def train():
     tb_log_dir = os.path.join('TB_logdir',exp_name)
     from keras.callbacks import TensorBoard
     tb_callbacks = TensorBoard(log_dir = tb_log_dir)
-
+    # Y_train.split(maxlen-embedding_len,axis=1)
     lr_scheduler = LearningRateScheduler(lr_schedule)
-    history_callback = model.fit([X_train, a0, c0], list(Y_train), batch_size=batch_size,  
+    Y_train = [np.squeeze(x) for x in np.split(Y_train,Y_train.shape[1],axis=1)]
+    Y_val = [np.squeeze(x) for x in np.split(Y_val,Y_val.shape[1],axis=1)]
+    history_callback = model.fit([X_train, a0_train, c0_train], Y_train, batch_size=batch_size,  
                 epochs=epochs,
-                callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0, c0], list(Y_val)),
-                steps_per_epoch=int(np.ceil( dataset_size/ float(batch_size))))
+                callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0_val, c0_val],Y_val),
+                steps_per_epoch=int(np.ceil( train_dataset_size/ float(batch_size))))
     acc_history = history_callback.history["acc"]
     max_acc = str(np.max(acc_history))
     max_acc_log_dir = os.path.join('Max_Acc_logdir','Max_Acc.txt')
@@ -173,9 +179,9 @@ def train():
     model.save_weights(model_weights_dir)
 
     # Clean up the TF session.
-    coord.request_stop()
-    coord.join(threads)
-    K.clear_session()
+    # coord.request_stop()
+    # coord.join(threads)
+    # K.clear_session()
     
     return LSTM_cell,reshapor,densor
 
