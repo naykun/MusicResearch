@@ -69,8 +69,8 @@ class vector_pair:
         total_times = 0.
         for var in self.labels:
             total_times += self.labels[var]
-            acc += self.labels[var]**2
-        acc = acc / total_times**2
+            acc = max(acc,self.labels[var])
+        acc = acc / total_times
         return acc
     def get_total_times_in_dataset(self):
         total_times = 0
@@ -109,7 +109,7 @@ def run(length):
     except Exception as e:
         print(e)
 
-    max_acc_log = './max_acc_average.txt'
+    max_acc_log = './max_acc_max.txt'
     # num / Acc
     print('%d \t %f' % (length, acc), file=open(max_acc_log, 'a'))
 
