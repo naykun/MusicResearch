@@ -12,4 +12,4 @@ inputs, labels, lengths = get_numpy_from_tf_sequence_example( input_size=38,
 print('inputs shape',inputs.shape)
 print('inputs type',type(inputs))
 print('Finished! And then use ipdb for debug and watch the variables')
-import ipdb; ipdb.set_trace()
+import ipdb; ipdb.set_trinputsace()

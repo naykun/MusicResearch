@@ -116,8 +116,8 @@ class Melody(events_lib.SimpleEventSequence):
       ValueError: If `events` contains an event that is not in the proper range.
     """
     for event in events:
-      if not MIN_MELODY_EVENT <= event <= MAX_MELODY_EVENT:
-        raise ValueError('Melody event out of range: %d' % event)
+      if not MIN_MELODY_EVENT <= int(event) <= MAX_MELODY_EVENT:
+        raise ValueError('Melody event out of range: %d %d' % (MIN_MELODY_EVENT,event))
     # Replace MELODY_NOTE_OFF events with MELODY_NO_EVENT before first note.
     cleaned_events = list(events)
     for i, e in enumerate(events):
