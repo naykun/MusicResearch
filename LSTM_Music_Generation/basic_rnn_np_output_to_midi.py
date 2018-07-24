@@ -119,7 +119,7 @@ def get_checkpoint():
     return None
 
 
-def event_sequence_to_midi(generator, encoded_event_sequence, index, config):
+def event_sequence_to_midi(FLAGS, generator, encoded_event_sequence, index, config):
   """
 
   Uses the given encoded_event_sequence(events start from 0) to write MIDI files.
@@ -217,7 +217,7 @@ def event_sequence_to_midi(generator, encoded_event_sequence, index, config):
                   index, FLAGS.output_dir)
 
 
-def get_primer_events(generator, config):
+def get_primer_events(FLAGS, generator, config):
   """
 
   return primer melody as event_sequecne, in python-list form
@@ -332,7 +332,7 @@ def main(unused_argv):
   print('inputs type', type(inputs))
 
 
-  primer_events = get_primer_events(generator, config)
+  primer_events = get_primer_events(FLAGS, generator, config)
   print("primer_events:", primer_events)
   one_hot_input = encoded_event_sequence_to_one_hot(primer_events, 38)
   print("one-hot primer_events shape:", one_hot_input.shape)
@@ -341,7 +341,7 @@ def main(unused_argv):
   for i in range(FLAGS.num_outputs):
       test_song = inputs[i]
       encoded_event_sequence = one_hot_to_encoded_event_sequence(test_song)
-      event_sequence_to_midi(generator, encoded_event_sequence, i+1, config)
+      event_sequence_to_midi(FLAGS, generator, encoded_event_sequence, i+1, config)
 
 
 def console_entry_point():

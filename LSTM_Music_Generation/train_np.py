@@ -34,16 +34,16 @@ tf.app.flags.DEFINE_integer('epochs', 10,
                             'Epochs.')
 tf.app.flags.DEFINE_integer('embedding_len', 1,
                             'Embedding Length.')
-tf.app.flags.DEFINE_string('sequence_example_train_dir', '/unsullied/sharefs/ouyangzhihao/DataRoot/AAAI/yk/Wikifonia_basic_rnn_sequence_examples/train/training_melodies.tfrecord',
+tf.app.flags.DEFINE_string('sequence_example_train_file', '/unsullied/sharefs/ouyangzhihao/DataRoot/AAAI/yk/Wikifonia_basic_rnn_sequence_examples/train/training_melodies.tfrecord',
                            'The directory of sequence example for training.')
-tf.app.flags.DEFINE_string('sequence_example_val_dir', '/unsullied/sharefs/ouyangzhihao/DataRoot/AAAI/yk/Wikifonia_basic_rnn_sequence_examples/val/eval_melodies.tfrecord',
+tf.app.flags.DEFINE_string('sequence_example_eval_file', '/unsullied/sharefs/ouyangzhihao/DataRoot/AAAI/yk/Wikifonia_basic_rnn_sequence_examples/val/eval_melodies.tfrecord',
                            'The directory of sequence example for validation.')                         
-tf.app.flags.DEFINE_integer('maxlen', 511,
+tf.app.flags.DEFINE_integer('maxlen', 200,
                             'max timesteps')
 
 
 
-def get_train_model(layer_size,notes_range,embedding_len,maxlen):
+def get_train_model(FLAGS,layer_size,notes_range,embedding_len,maxlen):
 
 
     reshapor = Reshape((1,notes_range*embedding_len))
@@ -81,8 +81,7 @@ def get_train_model(layer_size,notes_range,embedding_len,maxlen):
 
     return model,LSTM_cell,reshapor,densor
 
-
-def lr_schedule(epoch):
+def lr_schedule(FLAGS, epoch):
     #Learning Rate Schedule
     lr = 1e-1
     epochs = FLAGS.epochs
@@ -99,8 +98,7 @@ def lr_schedule(epoch):
     lr = 1e-3
     return lr
 
-
-def train():
+def train(FLAGS):
     # Load parameters
     layer_size = FLAGS.layer_size
     batch_size = FLAGS.batch_size
@@ -109,8 +107,8 @@ def train():
     embedding_len = FLAGS.embedding_len
     maxlen = FLAGS.maxlen
 
-    train_sequence_example_file_paths = [FLAGS.sequence_example_train_dir]
-    val_sequence_example_file_paths = [FLAGS.sequence_example_val_dir]
+    train_sequence_example_file_paths = [FLAGS.sequence_example_train_file]
+    val_sequence_example_file_paths = [FLAGS.sequence_example_eval_file]
 
     X_train, labels_train, _ = get_numpy_from_tf_sequence_example(input_size=38,
                                     sequence_example_file_paths = train_sequence_example_file_paths,
@@ -185,7 +183,7 @@ def train():
     
     return LSTM_cell,reshapor,densor
 
-def get_inference_model(LSTM_cell, reshapor, densor, notes_range = 38,embedding_len=15, n_a = 64, Ty = 100):
+def get_inference_model(FLAGS, LSTM_cell, reshapor, densor, notes_range = 38,embedding_len=15, n_a = 64, Ty = 100):
     """
     Uses the trained "LSTM_cell" and "densor" from model() to generate a sequence of values.
     
@@ -242,7 +240,20 @@ def get_inference_model(LSTM_cell, reshapor, densor, notes_range = 38,embedding_
 
 
 if __name__ == '__main__':
-    LSTM_cell,reshapor,densor = train()
-    inference_model = get_inference_model(LSTM_cell,reshapor,densor,notes_range=FLAGS.notes_range, embedding_len=FLAGS.embedding_len,Ty=FLAGS.Ty)
-    inference_model.predict([X_initial,a0,c0],batch_size=predict_batchsize)
-    
+    LSTM_cell,reshapor,densor = train(FLAGS)
+    inference_model = get_inference_model(FLAGS, LSTM_cell,reshapor,densor,notes_range=FLAGS.notes_range, embedding_len=FLAGS.embedding_len,Ty=FLAGS.Ty)
+    inference_model.predict(FLAGS, [X_initial,a0,c0],batch_size=predict_batchsize)
+
+
+'''
+
+python3 train_np.py --layer_size=64 \
+    --notes_range=38 \
+    --batch_size=32 \
+    --Ty=100 \
+    --epochs=10 \
+    --embedding_len=1 \
+    --sequence_example_train_file=Wikifonia_basic_rnn_sequence_examples/train/training_melodies.tfrecord \
+    --sequence_example_eval_file=Wikifonia_basic_rnn_sequence_examples/train/eval_melodies.tfrecord
+
+'''
