@@ -98,6 +98,7 @@ print("one-hot primer_events:\n", one_hot_input)
 
 
 X_initial = np.array([[one_hot_input[0]]])
+print(X_initial.shape)
 # reshape(FLAGS.embedding_len, FLAGS.notes_range)
 a0 = np.zeros( (1,FLAGS.layer_size), dtype = int)
 c0 = np.zeros( (1,FLAGS.layer_size), dtype = int)
