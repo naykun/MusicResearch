@@ -30,15 +30,15 @@ tf.app.flags.DEFINE_integer('batch_size', 32,
                             'Batch size.')
 tf.app.flags.DEFINE_integer('Ty', 100,
                             'The number of hidden states.')
-tf.app.flags.DEFINE_integer('epochs', 10,
+tf.app.flags.DEFINE_integer('epochs', 1,
                             'Epochs.')
 tf.app.flags.DEFINE_integer('embedding_len', 1,
                             'Embedding Length.')
-tf.app.flags.DEFINE_string('sequence_example_train_file', '/unsullied/sharefs/ouyangzhihao/DataRoot/AAAI/yk/Wikifonia_basic_rnn_sequence_examples/train/training_melodies.tfrecord',
+tf.app.flags.DEFINE_string('sequence_example_train_dir', '/unsullied/sharefs/ouyangzhihao/DataRoot/AAAI/yk/Wikifonia_basic_rnn_sequence_examples/train/training_melodies.tfrecord',
                            'The directory of sequence example for training.')
-tf.app.flags.DEFINE_string('sequence_example_eval_file', '/unsullied/sharefs/ouyangzhihao/DataRoot/AAAI/yk/Wikifonia_basic_rnn_sequence_examples/val/eval_melodies.tfrecord',
+tf.app.flags.DEFINE_string('sequence_example_val_dir', '/unsullied/sharefs/ouyangzhihao/DataRoot/AAAI/yk/Wikifonia_basic_rnn_sequence_examples/val/eval_melodies.tfrecord',
                            'The directory of sequence example for validation.')                         
-tf.app.flags.DEFINE_integer('maxlen', 200,
+tf.app.flags.DEFINE_integer('maxlen', 20,
                             'max timesteps')
 
 
@@ -50,7 +50,7 @@ def get_train_model(FLAGS,layer_size,notes_range,embedding_len,maxlen):
     LSTM_cell = LSTM(layer_size, return_state = True)
     # tddensor = TimeDistributed(Dense(notes_range, activation='softmax'))
     densor = Dense(notes_range, activation='softmax')
-    X = Input(shape=(maxlen,notes_range))
+    X = Input(shape=(maxlen-embedding_len,notes_range*embedding_len))
 
     a0 = Input(shape=(layer_size,),name='a0') #LSTM acitvation value
     c0 = Input(shape=(layer_size,),name='c0') #LSTM cell value
@@ -64,8 +64,8 @@ def get_train_model(FLAGS,layer_size,notes_range,embedding_len,maxlen):
     # outputs = tddensor(lstm)
     outputs = []
 
-    for t in range(maxlen-embedding_len+1):
-        x = Lambda(lambda x: x[:,t:t+embedding_len,:])(X)
+    for t in range(maxlen-embedding_len):
+        x = Lambda(lambda x: x[:,t,:])(X)
         x = reshapor(x)
         if t==0:
             a, _, c = LSTM_cell(x,initial_state=[a0,c0])
@@ -81,7 +81,8 @@ def get_train_model(FLAGS,layer_size,notes_range,embedding_len,maxlen):
 
     return model,LSTM_cell,reshapor,densor
 
-def lr_schedule(FLAGS, epoch):
+
+def lr_schedule(epoch):
     #Learning Rate Schedule
     lr = 1e-1
     epochs = FLAGS.epochs
@@ -97,6 +98,15 @@ def lr_schedule(FLAGS, epoch):
 
     lr = 1e-3
     return lr
+def dataset_embedding(X,labels,maxlen,embedding_len):
+    X_embedded = []
+    for i in range(maxlen - embedding_len ):
+        X_embedded.append(np.reshape(X[:,i:i+embedding_len,:],(X.shape[0],1,-1)))
+
+    X_embedded = np.concatenate(X_embedded,axis=1)
+    label_embedded = labels[:,embedding_len:maxlen]
+    return X_embedded,label_embedded
+
 
 def train(FLAGS):
     # Load parameters
@@ -107,8 +117,8 @@ def train(FLAGS):
     embedding_len = FLAGS.embedding_len
     maxlen = FLAGS.maxlen
 
-    train_sequence_example_file_paths = [FLAGS.sequence_example_train_file]
-    val_sequence_example_file_paths = [FLAGS.sequence_example_eval_file]
+    train_sequence_example_file_paths = [FLAGS.sequence_example_train_dir]
+    val_sequence_example_file_paths = [FLAGS.sequence_example_val_dir]
 
     X_train, labels_train, _ = get_numpy_from_tf_sequence_example(input_size=38,
                                     sequence_example_file_paths = train_sequence_example_file_paths,
@@ -116,7 +126,11 @@ def train(FLAGS):
     X_val, labels_val, _ = get_numpy_from_tf_sequence_example(input_size=38,
                                     sequence_example_file_paths = val_sequence_example_file_paths,
                                     shuffle = False)
-    model,LSTM_cell,reshapor,densor = get_train_model(layer_size = layer_size, notes_range = notes_range,embedding_len=embedding_len,maxlen=maxlen)
+    X_train,labels_train = dataset_embedding(X_train, labels_train, maxlen, embedding_len)
+    X_val,labels_val = dataset_embedding(X_val, labels_val, maxlen, embedding_len)
+
+
+    model,LSTM_cell,reshapor,densor = get_train_model(FLAGS,layer_size = layer_size, notes_range = notes_range,embedding_len=embedding_len,maxlen=maxlen)
     Y_train = to_categorical(labels_train,notes_range)
     Y_val = to_categorical(labels_val,notes_range)
     print(Y_train.shape)
@@ -154,21 +168,22 @@ def train(FLAGS):
     lr_scheduler = LearningRateScheduler(lr_schedule)
     Y_train = [np.squeeze(x) for x in np.split(Y_train,Y_train.shape[1],axis=1)]
     Y_val = [np.squeeze(x) for x in np.split(Y_val,Y_val.shape[1],axis=1)]
-    history_callback = model.fit([X_train, a0_train, c0_train], Y_train, batch_size=batch_size,  
+    history_callback = model.fit([X_train, a0_train, c0_train], Y_train,batch_size=batch_size,
                 epochs=epochs,
-                callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0_val, c0_val],Y_val),
-                steps_per_epoch=int(np.ceil( train_dataset_size/ float(batch_size))))
-    acc_history = history_callback.history["acc"]
-    max_acc = str(np.max(acc_history))
-    max_acc_log_dir = os.path.join('Max_Acc_logdir','Max_Acc.txt')
-    try:
-        os.makedirs('Max_Acc_logdir')
-    except:
-        pass
-    print('Max accuracy:',max_acc)
-    print(exp_name + '\t' + str(layer_size) + '\t' + str(batch_size) 
-            + '\t' + str(epochs) + '\t' + max_acc, file = open(max_acc_log_dir, 'a'))
-
+                callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0_val, c0_val],Y_val))
+    for key in history_callback.history:
+        print(key)
+    # acc_history = history_callback.history["acc"]
+    # max_acc = str(np.max(acc_history))
+    # max_acc_log_dir = os.path.join('Max_Acc_logdir','Max_Acc.txt')
+    # try:
+    #     os.makedirs('Max_Acc_logdir')
+    # except:
+    #     pass
+    # print('Max accuracy:',max_acc)
+    # print(exp_name + '\t' + str(layer_size) + '\t' + str(batch_size)
+    #         + '\t' + str(epochs) + '\t' + max_acc, file = open(max_acc_log_dir, 'a'))
+    #
     try:
         os.makedirs(model_log_dir)
     except:
@@ -183,7 +198,7 @@ def train(FLAGS):
     
     return LSTM_cell,reshapor,densor
 
-def get_inference_model(FLAGS, LSTM_cell, reshapor, densor, notes_range = 38,embedding_len=15, n_a = 64, Ty = 100):
+def get_inference_model(FLAGS,LSTM_cell, reshapor, densor, notes_range = 38,embedding_len=15, layer_size=64, Ty = 100):
     """
     Uses the trained "LSTM_cell" and "densor" from model() to generate a sequence of values.
     
@@ -198,14 +213,14 @@ def get_inference_model(FLAGS, LSTM_cell, reshapor, densor, notes_range = 38,emb
     inference_model -- Keras model instance
     """
 
-    slicer = Lambda(lambda x:x[notes_range:])
-
+    slicer = Lambda(lambda x:x[:,:,notes_range:])
+    concator = keras.layers.Concatenate(axis=-1)
     # Define the input of your model with a shape 
     x0 = Input(shape=(embedding_len, notes_range))
     
     # Define s0, initial hidden state for the decoder LSTM
-    a0 = Input(shape=(n_a,), name='a0')
-    c0 = Input(shape=(n_a,), name='c0')
+    a0 = Input(shape=(layer_size,), name='a0')
+    c0 = Input(shape=(layer_size,), name='c0')
     a = a0
     c = c0
     x = reshapor(x0)
@@ -222,7 +237,7 @@ def get_inference_model(FLAGS, LSTM_cell, reshapor, densor, notes_range = 38,emb
         
         # Step 2.B: Apply Dense layer to the hidden state output of the LSTM_cell (≈1 line)
         out = densor(a)
-
+        out = reshapor(out)
         # Step 2.C: Append the prediction "out" to "outputs". out.shape = (None, 78) (≈1 line)
         outputs.append(out)
         
@@ -230,7 +245,7 @@ def get_inference_model(FLAGS, LSTM_cell, reshapor, densor, notes_range = 38,emb
         #           selected value, which will be passed as the input to LSTM_cell on the next step. We have provided 
         #           the line of code you need to do this. 
         x = slicer(x)
-        x = merge([x,out],mode='concat')        
+        x = concator([x,out])
     # Step 3: Create model instance with the correct "inputs" and "outputs" (≈1 line)
     inference_model = Model(inputs=[x0,a0,c0],outputs=outputs)
     
@@ -241,9 +256,9 @@ def get_inference_model(FLAGS, LSTM_cell, reshapor, densor, notes_range = 38,emb
 
 if __name__ == '__main__':
     LSTM_cell,reshapor,densor = train(FLAGS)
-    inference_model = get_inference_model(FLAGS, LSTM_cell,reshapor,densor,notes_range=FLAGS.notes_range, embedding_len=FLAGS.embedding_len,Ty=FLAGS.Ty)
-    inference_model.predict(FLAGS, [X_initial,a0,c0],batch_size=predict_batchsize)
-
+    inference_model = get_inference_model(FLAGS,LSTM_cell,reshapor,densor,notes_range=FLAGS.notes_range, embedding_len=FLAGS.embedding_len,layer_size=FLAGS.layer_size,Ty=FLAGS.Ty)
+    inference_model.predict([X_initial,a0,c0],batch_size=predict_batchsize)
+    
 
 '''
 
