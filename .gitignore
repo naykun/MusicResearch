@@ -1,3 +1,6 @@
+# For logs
+*.txt
+*.swp
 #Ignore TF Moduel file
 *ckpt*
 checkpoint
