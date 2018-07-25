@@ -12,30 +12,85 @@ has at least ~100k characters. ~1M is better.
 from __future__ import print_function
 from keras.utils.data_utils import get_file
 import numpy as np
-import sys
+import xxhash
+import time
 import io
 from sequence_example_lib import *
 import os
 import tensorflow as tf
-sequence_example_file = ('~/sss/Mag/Mag_Data/data_from_WH/Transmit/S_E_BasicRNN_midishare_bach20180725/training_melodies.tfrecord')
+sequence_example_file = ('~/sss/Mag/Mag_Data/data_from_WH/Transmit/S_E_BasicRNN_Wikifonia_20180725/training_melodies.tfrecord')
 sequence_example_file_paths = tf.gfile.Glob(
     os.path.expanduser(sequence_example_file))
+
+def get_split_data_emblen_timestep(inputs, labels, time_step = 10, infor_length = 15):
+    # cut the text in semi-redundant sequences of time_step characters
+    step = 1
+
+    inputs_emb = []
+    label_emb = []
+    for i in range(0, len(inputs) - infor_length, step):
+        # print(np.shape(inputs[i: i + infor_length]))
+        # print(np.shape(inputs))
+        # import ipdb;
+        # ipdb.set_trace()
+        inputs_emb.append(inputs[i: i + infor_length].flatten())
+        label_emb.append(labels[i + infor_length])
+
+    # inputs_time_step = []
+    # label_time_step = []
+    # for i in range(0, len(inputs_emb) - time_step, step):
+    #     try:
+    #         inputs_time_step.append((inputs_emb[i: i + time_step]))
+    #         label_time_step.append(label_emb[i + time_step])
+    #     except:
+    #         print('Wrong')
+    #         import ipdb;
+    #         ipdb.set_trace()
+
+    return inputs_emb, label_emb
+    # return inputs_time_step,label_time_step
 
 inputs, labels, lengths = get_numpy_from_tf_sequence_example( input_size=38,
                                     sequence_example_file_paths = sequence_example_file_paths,
                                     shuffle = False)
+# how_much_part = 10
+# concate_inputs = inputs[:int(len(inputs) / how_much_part)]
+# concate_labels = labels[:int(len(labels) / how_much_part)]
+
+
+# infor_length = 9
+# long_inputs_melodies = []
+# long_label = []
+# for index,var in enumerate(inputs):
+#     inputs_emb, label_emb = get_split_data_emblen_timestep(inputs[index],labels[index],infor_length=infor_length)
+#     long_inputs_melodies.extend(inputs_emb)
+#     long_label.extend(label_emb)
+#
+# print('long_inputs_melodies shape',np.shape(long_inputs_melodies))
+# print('long_label shape',np.shape(long_label))
+#
+# print('inputs shape',np.shape(inputs))
+# print('labels shape',np.shape(labels))
+# import ipdb; ipdb.set_trace()
 
 #Hash Max
 global_fail_hash_case = 0
 
+h = xxhash.xxh64()
 class vector_pair:
     def get_hash(self, data):
-        try:
-            data.flags.writeable = False
-            return hash(data.data)
-        except:
-            # import ipdb; ipdb.set_trace()
-            return hash(str(data))
+        # try:
+        #     data.flags.writeable = False
+        #     return hash(data.data)
+        # except:
+        #     return hash(str(data))
+        # return hash(str(data))
+
+        h.update(data.data);
+        res = h.intdigest();
+        h.reset()
+        return res
+
     def __init__(self, input, label):
         self.labels = {}
         self.input = input
@@ -73,13 +128,23 @@ def calculate_res(text_pairs):
 
 
 def run(length):
-    train_data, train_label = inputs, labels
 
+    infor_length = length
+    long_inputs_melodies = []
+    long_label = []
+    for index, var in enumerate(inputs):
+        inputs_emb, label_emb = get_split_data_emblen_timestep(inputs[index], labels[index], infor_length=infor_length)
+        long_inputs_melodies.extend(inputs_emb)
+        long_label.extend(label_emb)
+
+    train_data, train_label = long_inputs_melodies, long_label
     print('Build model...')
-
+    # import ipdb;
+    # ipdb.set_trace()
     text_pairs_hash = {}
     vector_pair_obj = vector_pair(1,2)
     for index, var in enumerate(train_data):
+        if(index % 100000 == 0): print('When %d/%f Time cost:' % (index, (0.0+index)/len(train_data)),time.time() - start_time)
         hash_var = vector_pair_obj.get_hash(var)
         hash_label = vector_pair_obj.get_hash(train_label[index])
         if (hash_var in text_pairs_hash.keys()):
@@ -100,7 +165,11 @@ def run(length):
     # print('Fail hash case:', vector_pair.fail_hash_case)
     # import ipdb;ipdb.set_trace()
 
+
+start_time = time.time()
 for i in range(1,41):
     run(i)
+    print('In length %d Final Time cost:' % i, time.time() - start_time)
+
 
 # run(2)
