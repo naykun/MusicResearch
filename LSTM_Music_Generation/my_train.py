@@ -20,30 +20,8 @@ from sequence_example_lib import *
 import os
 
 
-FLAGS = tf.app.flags.FLAGS
-
-tf.app.flags.DEFINE_integer('layer_size', 64,
-                            'The number of hidden states.')
-tf.app.flags.DEFINE_integer('notes_range', 38,
-                            'The length of the range of notes.')
-tf.app.flags.DEFINE_integer('batch_size', 32,
-                            'Batch size.')
-tf.app.flags.DEFINE_integer('Ty', 100,
-                            'The number of hidden states.')
-tf.app.flags.DEFINE_integer('epochs', 1,
-                            'Epochs.')
-tf.app.flags.DEFINE_integer('embedding_len', 1,
-                            'Embedding Length.')
-tf.app.flags.DEFINE_string('sequence_example_train_file', 'Wikifonia_basic_rnn_sequence_examples/training_melodies.tfrecord',
-                           'The directory of sequence example for training.')
-tf.app.flags.DEFINE_string('sequence_example_eval_file', 'Wikifonia_basic_rnn_sequence_examples/eval_melodies.tfrecord',
-                           'The directory of sequence example for validation.')                         
-tf.app.flags.DEFINE_integer('maxlen', 20,
-                            'max timesteps')
-
-
 def get_train_model(FLAGS):
-    
+
     layer_size = FLAGS.layer_size
     notes_range = FLAGS.notes_range
     embedding_len = FLAGS.embedding_len
@@ -119,7 +97,7 @@ def train(FLAGS):
 
     global total_epochs
     epochs = total_epochs = FLAGS.epochs
-    
+
     embedding_len = FLAGS.embedding_len
     maxlen = FLAGS.maxlen
 
@@ -235,6 +213,7 @@ def get_inference_model(FLAGS,LSTM_cell, reshapor, densor):
     c0 = Input(shape=(layer_size,), name='c0')
     a = a0
     c = c0
+
     x = reshapor(x0)
 
     ### START CODE HERE ###
@@ -270,7 +249,7 @@ if __name__ == '__main__':
     LSTM_cell,reshapor,densor = train(FLAGS)
     inference_model = get_inference_model(FLAGS,LSTM_cell,reshapor,densor)
     inference_model.predict([X_initial,a0,c0],batch_size=predict_batchsize)
-      
+    
 
 '''
 

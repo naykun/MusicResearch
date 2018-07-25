@@ -1,6 +1,10 @@
 LSTM_Music_Generation/tmp 
 *.tfrecord
-# LSTM_Music_Generation/*logdir
+*.mid
+
+LSTM_Music_Generation/logdir
+LSTM_Music_Generation/TB_logdir
+LSTM_Music_Generation/generated
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
