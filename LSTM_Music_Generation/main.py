@@ -103,21 +103,34 @@ print(X_initial.shape)
 a0 = np.zeros( (1,FLAGS.layer_size), dtype = int)
 c0 = np.zeros( (1,FLAGS.layer_size), dtype = int)
 
-one_hot_output = inference_model.predict([X_initial,a0,c0],batch_size=FLAGS.predict_batch_size)
+model_output = inference_model.predict([X_initial,a0,c0],batch_size=FLAGS.predict_batch_size)
 
 
-encoded_event_sequence = one_hot_to_encoded_event_sequence(one_hot_output)
+def model_output_to_one_hot_output(output):
+    ret = []
+    for i in output:
+        ret.append(i[0][0])
+    ret = np.array(ret)
+    ret = np.rint(ret)
+    return ret
+
+output = model_output_to_one_hot_output(model_output)
+
+# import ipdb; ipdb.set_trace()
+
+encoded_event_sequence = one_hot_to_encoded_event_sequence(output)
 event_sequence_to_midi(FLAGS, generator, encoded_event_sequence, 1, config)
 
 
 '''
+
 
 python3 main.py --layer_size=64 \
     --notes_range=38 \
     --batch_size=64 \
     --predict_batch_size=1 \
     --Ty=100 \
-    --epochs=1 \
+    --epochs=100 \
     --embedding_len=1 \
     --sequence_example_train_file=Wikifonia_basic_rnn_sequence_examples/training_melodies.tfrecord \
     --sequence_example_eval_file=Wikifonia_basic_rnn_sequence_examples/eval_melodies.tfrecord \
@@ -129,6 +142,7 @@ python3 main.py --layer_size=64 \
     --num_steps=10 \
     --hparams="batch_size=64,rnn_layer_sizes=[64,64]" \
     --primer_melody="[60,-2,60,-2,67,-2,67,-2]"
+
 
 '''
 
