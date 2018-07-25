@@ -59,12 +59,51 @@ class MelodyRnnModel(events_rnn_model.EventSequenceRnnModel):
         self._config.max_note,
         self._config.transpose_to_key)
 
-    melody = self._generate_events(num_steps, melody, temperature, beam_size,
+    # Someday changed num_steps to be 1
+    melody = self._generate_melody(num_steps, melody, temperature, beam_size,
                                    branch_factor, steps_per_iteration)
 
     melody.transpose(-transpose_amount)
 
+    # print("*****primer_event:",list(primer_event))
+
     return melody
+
+  def primer_melody_to_events(self, num_steps, primer_melody, temperature=1.0,
+                      beam_size=1, branch_factor=1, steps_per_iteration=1):
+    """Generate a melody from a primer melody.
+
+    Args:
+      num_steps: The integer length in steps of the final melody, after
+          generation. Includes the primer.
+      primer_melody: The primer melody, a Melody object.
+      temperature: A float specifying how much to divide the logits by
+         before computing the softmax. Greater than 1.0 makes melodies more
+         random, less than 1.0 makes melodies less random.
+      beam_size: An integer, beam size to use when generating melodies via beam
+          search.
+      branch_factor: An integer, beam search branch factor to use.
+      steps_per_iteration: An integer, number of melody steps to take per beam
+          search iteration.
+
+    Returns:
+      The generated Melody object (which begins with the provided primer
+          melody).
+    """
+    melody = copy.deepcopy(primer_melody)
+
+    transpose_amount = melody.squash(
+        self._config.min_note,
+        self._config.max_note,
+        self._config.transpose_to_key)
+
+    # Someday changed num_steps to be 1
+    primer_events = self._get_primer_events(num_steps, melody, temperature, beam_size,
+                                   branch_factor, steps_per_iteration)
+
+    # print("*****primer_event:",list(primer_event))
+
+    return primer_events
 
   def melody_log_likelihood(self, melody):
     """Evaluate the log likelihood of a melody under the model.

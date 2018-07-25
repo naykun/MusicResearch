@@ -109,14 +109,18 @@ class BaseSequenceGenerator(object):
     pass
 
   @abc.abstractmethod
-  def _numpy_to_midi(self, input_sequence, generator_options, numpy_event_sequence):
+  def _event_sequence_to_midi(self, input_sequence, generator_options, encoded_event_sequence, config):
     """
     added by Someday
-    convent numpy event sequence to midi, using basic_rnn encoding
-    :param input_sequence:
-    :param generator_options:
-    :param numpy_event_sequence:
-    :return:
+    convent event sequence to midi, using basic_rnn encoding
+    """
+    pass
+
+  @abc.abstractmethod
+  def _primer_melody_to_event_sequence(self, input_sequence, generator_options, config):
+    """
+    added by Someday
+    convent event sequence to midi, using basic_rnn encoding
     """
     pass
 
@@ -207,8 +211,8 @@ class BaseSequenceGenerator(object):
     self.initialize()
     return self._generate(input_sequence, generator_options)
 
-  # modified Someday
-  def numpy_to_midi(self, input_sequence, generator_options, numpy_event_sequence):
+  # modified by Someday
+  def event_sequence_to_midi(self, input_sequence, generator_options, encoded_event_sequence, config):
     """
     added by Someday
     convent numpy event sequence to midi, using basic_rnn encoding
@@ -218,7 +222,11 @@ class BaseSequenceGenerator(object):
     :return:
     """
     self.initialize()
-    return self._numpy_to_midi(input_sequence, generator_options, numpy_event_sequence)
+    return self._event_sequence_to_midi(input_sequence, generator_options, encoded_event_sequence, config)
+  # modified by Someday
+  def primer_melody_to_event_sequence(self, input_sequence, generator_options, config):
+    self.initialize()
+    return self._primer_melody_to_event_sequence(input_sequence, generator_options, config)
 
   def create_bundle_file(self, bundle_file, bundle_description=None):
     """Writes a generator_pb2.GeneratorBundle file in the specified location.
