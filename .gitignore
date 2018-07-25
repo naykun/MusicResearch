@@ -1,3 +1,7 @@
+#Ignore TF Moduel file
+*ckpt*
+checkpoint
+
 LSTM_Music_Generation/tmp 
 *.tfrecord
 *.mid
