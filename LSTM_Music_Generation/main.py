@@ -99,8 +99,8 @@ print("one-hot primer_events:\n", one_hot_input)
 
 X_initial = np.array([[one_hot_input[0]]])
 # reshape(FLAGS.embedding_len, FLAGS.notes_range)
-a0 = np.zeros( (FLAGS.layer_size,), dtype = int)
-c0 = np.zeros( (FLAGS.layer_size,), dtype = int)
+a0 = np.zeros( (1,FLAGS.layer_size), dtype = int)
+c0 = np.zeros( (1,FLAGS.layer_size), dtype = int)
 
 one_hot_output = inference_model.predict([X_initial,a0,c0],batch_size=FLAGS.predict_batch_size)
 
