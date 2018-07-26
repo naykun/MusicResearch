@@ -249,8 +249,8 @@ def get_inference_model(FLAGS, LSTM_cell, reshapor, densor):
     c0 = Input(shape=(layer_size,), name='c0')
     a = a0
     c = c0
-    state_slicer = Lambda(lambda x:K.squeeze(x[:,0,:],axis = 1))
-    state_reshapor = Reshape((1,))
+    # state_slicer = Lambda(lambda x:K.squeeze(x[:,0,:],axis = 1))
+    # state_reshapor = Reshape((1,))
     x = reshapor(x0)
 
     ### START CODE HERE ###
