@@ -30,10 +30,11 @@ def get_train_model_unroll(FLAGS):
     concator = keras.layers.Concatenate(axis=1)
     reshapor = Reshape((1,notes_range*embedding_len))
     LSTM_cell = LSTM(layer_size, return_state = True)
+    masker = keras.layers.Masking(mask_value=0)
     # tddensor = TimeDistributed(Dense(notes_range, activation='softmax'))
     densor = Dense(notes_range, activation='softmax')
     X = Input(shape=(maxlen-embedding_len,notes_range*embedding_len))
-
+    X = masker(X)
     a0 = Input(shape=(layer_size,),name='a0') #LSTM acitvation value
     c0 = Input(shape=(layer_size,),name='c0') #LSTM cell value
     # a0 = np.zeros((m,layer_size))
@@ -75,6 +76,7 @@ def get_train_model(FLAGS):
     maxlen = FLAGS.maxlen
 
     reshapor = Reshape((1,notes_range*embedding_len))
+    masker = keras.layers.Masking(mask_value=0)
     LSTM_cell = LSTM(layer_size,return_state=True, return_sequences = True)
     densor = Dense(notes_range, activation='softmax')
     tddensor = TimeDistributed(densor)
@@ -88,7 +90,9 @@ def get_train_model(FLAGS):
     a = a0
     c = c0
 
-    lstm,_,_ = LSTM_cell(X,initial_state=[a,c])
+
+    X_masked = masker(X)
+    lstm,_,_ = LSTM_cell(X_masked,initial_state=[a,c])
     outputs = tddensor(lstm)
     
     model = Model(inputs=[X,a0,c0],outputs=outputs)
