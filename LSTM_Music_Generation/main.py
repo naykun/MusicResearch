@@ -38,12 +38,6 @@ tf.app.flags.DEFINE_integer('predict_batch_size', 1,
 
 
 tf.app.flags.DEFINE_string(
-    'run_dir', None,
-    'Path to the directory where the latest checkpoint will be loaded from.')
-tf.app.flags.DEFINE_string(
-    'checkpoint_file', None,
-    'Path to the checkpoint file. run_dir will take priority over this flag.')
-tf.app.flags.DEFINE_string(
     'output_dir', 'generated',
     'The directory where MIDI files will be saved to.')
 tf.app.flags.DEFINE_integer(
@@ -72,8 +66,6 @@ LSTM_cell, reshapor, densor = train(FLAGS)
 inference_model = get_inference_model(FLAGS, LSTM_cell, reshapor, densor)
 
 
-
-
 tf.logging.set_verbosity('INFO')
 
 config = melody_rnn_config_flags.config_from_flags()
@@ -82,7 +74,7 @@ generator = melody_rnn_sequence_generator.MelodyRnnSequenceGenerator(
     model=melody_rnn_model.MelodyRnnModel(config),
     details=config.details,
     steps_per_quarter=config.steps_per_quarter,
-    checkpoint=get_checkpoint(FLAGS)
+    checkpoint=get_checkpoint()
     )
 
 sequence_example_file = (FLAGS.sequence_example_train_file)
@@ -136,7 +128,6 @@ python3 main.py --layer_size=64 \
     --sequence_example_eval_file=Wikifonia_basic_rnn_sequence_examples/eval_melodies.tfrecord \
     --maxlen=10 \
     --config=basic_rnn \
-    --run_dir=magenta_logdir/run1 \
     --output_dir=generated \
     --num_outputs=5 \
     --num_steps=10 \

@@ -114,6 +114,7 @@ def lr_schedule(epoch):
 
     lr = 1e-3
     return lr
+
 def dataset_embedding(X,labels,maxlen,embedding_len):
     X_embedded = []
     for i in range(maxlen - embedding_len ):
@@ -217,7 +218,7 @@ def train(FLAGS):
     
     return LSTM_cell,reshapor,densor
 
-def get_inference_model(FLAGS,LSTM_cell, reshapor, densor):
+def get_inference_model(FLAGS, LSTM_cell, reshapor, densor):
     
     notes_range = FLAGS.notes_range
     embedding_len = FLAGS.embedding_len 
@@ -259,7 +260,7 @@ def get_inference_model(FLAGS,LSTM_cell, reshapor, densor):
     for t in range(Ty):
         
         # Step 2.A: Perform one step of LSTM_cell (≈1 line)
-        a, _, c = LSTM_cell(x,initial_state=[a,c])
+        a, _, c = LSTM_cell(x, initial_state=[a,c], return_state = True)
         
         # Step 2.B: Apply Dense layer to the hidden state output of the LSTM_cell (≈1 line)
         out = densor(a)
