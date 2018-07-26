@@ -35,11 +35,11 @@ from magenta.protobuf import music_pb2
 from sequence_example_lib import *
 import os
 
-def get_checkpoint(FLAGS):
+def get_checkpoint():
   """Get the training dir or checkpoint path to be used by the model."""
-  if FLAGS.run_dir:
-    train_dir = os.path.join(os.path.expanduser(FLAGS.run_dir), 'train')
-    return train_dir
+  run_dir = 'magenta/magenta_logdir/run1'
+  train_dir = os.path.join(os.path.expanduser(run_dir), 'train')
+  return train_dir
   
 
 def event_sequence_to_midi(FLAGS, generator, encoded_event_sequence, index, config):

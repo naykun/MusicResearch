@@ -38,12 +38,6 @@ tf.app.flags.DEFINE_integer('predict_batch_size', 1,
 
 
 tf.app.flags.DEFINE_string(
-    'run_dir', None,
-    'Path to the directory where the latest checkpoint will be loaded from.')
-tf.app.flags.DEFINE_string(
-    'checkpoint_file', None,
-    'Path to the checkpoint file. run_dir will take priority over this flag.')
-tf.app.flags.DEFINE_string(
     'output_dir', 'generated',
     'The directory where MIDI files will be saved to.')
 tf.app.flags.DEFINE_integer(
@@ -82,7 +76,7 @@ generator = melody_rnn_sequence_generator.MelodyRnnSequenceGenerator(
     model=melody_rnn_model.MelodyRnnModel(config),
     details=config.details,
     steps_per_quarter=config.steps_per_quarter,
-    checkpoint=get_checkpoint(FLAGS)
+    checkpoint=get_checkpoint()
     )
 
 sequence_example_file = (FLAGS.sequence_example_train_file)
@@ -109,16 +103,24 @@ model_output = inference_model.predict([X_initial,a0,c0],batch_size=FLAGS.predic
 def model_output_to_one_hot_output(output):
     ret = []
     for i in output:
-        ret.append(i[0][0])
+        ret.append(list(i[0][0]))
+
     ret = np.array(ret)
-    ret = np.rint(ret)
+
+    print("model output:", list(ret) )
+
+    # ret = np.rint(ret)
     return ret
 
 output = model_output_to_one_hot_output(model_output)
 
 # import ipdb; ipdb.set_trace()
 
+
 encoded_event_sequence = one_hot_to_encoded_event_sequence(output)
+
+print("encoded event sequence", encoded_event_sequence)
+
 event_sequence_to_midi(FLAGS, generator, encoded_event_sequence, 1, config)
 
 
@@ -130,70 +132,18 @@ python3 main.py --layer_size=64 \
     --batch_size=64 \
     --predict_batch_size=1 \
     --Ty=100 \
-    --epochs=100 \
+    --epochs=1 \
     --embedding_len=1 \
-    --sequence_example_train_file=Wikifonia_basic_rnn_sequence_examples/training_melodies.tfrecord \
-    --sequence_example_eval_file=Wikifonia_basic_rnn_sequence_examples/eval_melodies.tfrecord \
+    --sequence_example_train_file=/home/ouyangzhihao/sss/AAAI/yyh/Wikifonia_basic_rnn_sequence_examples/training_melodies.tfrecord \
+    --sequence_example_eval_file=/home/ouyangzhihao/sss/AAAI/yyh/Wikifonia_basic_rnn_sequence_examples/eval_melodies.tfrecord \
     --maxlen=10 \
     --config=basic_rnn \
-    --run_dir=magenta_logdir/run1 \
-    --output_dir=generated \
-    --num_outputs=5 \
-    --num_steps=10 \
-    --hparams="batch_size=64,rnn_layer_sizes=[64,64]" \
-    --primer_melody="[60,-2,60,-2,67,-2,67,-2]"
-
-
-'''
-
-
-
-
-
-'''
-
-python3 main.py --config=basic_rnn \
---run_dir=magenta_logdir/run1 \
---output_dir=generated \
---num_outputs=5 \
---num_steps=10 \
---hparams="batch_size=64,rnn_layer_sizes=[64,64]" \
---primer_melody="[60,-2,60,-2,67,-2,67,-2]"
-
-'''
-
-'''
-
-python3 main.py --layer_size=64 \
-    --notes_range=38 \
-    --batch_size=32 \
-    --Ty=100 \
-    --epochs=1 \
-    --embedding_len=1 \
-    --sequence_example_train_file=Wikifonia_basic_rnn_sequence_examples/training_melodies.tfrecord \
-    --sequence_example_eval_file=Wikifonia_basic_rnn_sequence_examples/eval_melodies.tfrecord \
-    --maxlen=200
-
-
-
-python3 main.py --layer_size=64 \
-    --notes_range=38 \
-    --batch_size=32 \
-    --Ty=100 \
-    --epochs=1 \
-    --embedding_len=1 \
-    --sequence_example_train_file=Wikifonia_basic_rnn_sequence_examples/training_melodies.tfrecord \
-    --sequence_example_eval_file=Wikifonia_basic_rnn_sequence_examples/eval_melodies.tfrecord \
-    
-    
-    --config=basic_rnn \
-    --run_dir=logdir/run1 \
     --output_dir=generated \
     --num_outputs=5 \
     --num_steps=10 \
     --primer_melody="[60,-2,60,-2,67,-2,67,-2]"
 
 
-
-
 '''
+
+
