@@ -75,7 +75,7 @@ def get_train_model(FLAGS):
     maxlen = FLAGS.maxlen
 
     reshapor = Reshape((1,notes_range*embedding_len))
-    LSTM_cell = LSTM(layer_size, return_sequences = True)
+    LSTM_cell = LSTM(layer_size,return_state=True, return_sequences = True)
     densor = Dense(notes_range, activation='softmax')
     tddensor = TimeDistributed(densor)
     X = Input(shape=(maxlen-embedding_len,notes_range*embedding_len))
@@ -88,7 +88,7 @@ def get_train_model(FLAGS):
     a = a0
     c = c0
 
-    lstm = LSTM_cell(X,initial_state=[a,c])
+    lstm,_,_ = LSTM_cell(X,initial_state=[a,c])
     outputs = tddensor(lstm)
     
     model = Model(inputs=[X,a0,c0],outputs=outputs)
@@ -248,7 +248,8 @@ def get_inference_model(FLAGS,LSTM_cell, reshapor, densor):
     c0 = Input(shape=(layer_size,), name='c0')
     a = a0
     c = c0
-
+    state_slicer = Lambda(lambda x:K.squeeze(x[:,0,:],axis = 1))
+    state_reshapor = Reshape((1,))
     x = reshapor(x0)
 
     ### START CODE HERE ###
@@ -259,8 +260,8 @@ def get_inference_model(FLAGS,LSTM_cell, reshapor, densor):
     for t in range(Ty):
         
         # Step 2.A: Perform one step of LSTM_cell (≈1 line)
-        a, _, c = LSTM_cell(x,initial_state=[a,c])
-        
+        _, a, c = LSTM_cell(x,initial_state=[a,c])
+        # print("a shape:",a.shape)
         # Step 2.B: Apply Dense layer to the hidden state output of the LSTM_cell (≈1 line)
         out = densor(a)
         out = reshapor(out)
@@ -272,6 +273,9 @@ def get_inference_model(FLAGS,LSTM_cell, reshapor, densor):
         #           the line of code you need to do this. 
         x = slicer(x)
         x = concator([x,out])
+
+        # a = state_slicer(a)
+        # c = state_slicer(c)
     # Step 3: Create model instance with the correct "inputs" and "outputs" (≈1 line)
     inference_model = Model(inputs=[x0,a0,c0],outputs=outputs)
     
