@@ -19,9 +19,10 @@ import os
 import tensorflow as tf
 
 import magenta
-import melody_rnn_config_flags
-import events_rnn_graph
-import events_rnn_train
+
+from magenta.model.melody_rnn import melody_rnn_config_flags
+from magenta.model.shared import events_rnn_graph
+from magenta.model.shared import events_rnn_train
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('run_dir', '/tmp/melody_rnn/logdir/run1',

@@ -17,7 +17,7 @@
 import tensorflow as tf
 
 import magenta
-import melody_rnn_model
+from magenta.model.melody_rnn import melody_rnn_model
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string(

@@ -25,7 +25,7 @@ import tensorflow as tf
 
 from magenta.common import beam_search
 from magenta.common import state_util
-import events_rnn_graph
+from magenta.model.shared import events_rnn_graph
 import magenta.music as mm
 
 

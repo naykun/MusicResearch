@@ -20,7 +20,7 @@ import tensorflow as tf
 
 import magenta
 # from magenta.models.shared import events_rnn_model
-import events_rnn_model
+from magenta.model.shared import events_rnn_model
 import magenta.music as mm
 
 DEFAULT_MIN_NOTE = 48
