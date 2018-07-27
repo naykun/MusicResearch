@@ -60,34 +60,30 @@ tf.app.flags.DEFINE_string(
     'The path to a MIDI file containing a melody that will be used as a '
     'priming melody. If a primer melody is not specified, melodies will be '
     'generated from scratch.')
-
+tf.app.flags.DEFINE_string(
+    'encoding_config', 'basic_rnn',
+    'The path to a MIDI file containing a melody that will be used as a '
+    'priming melody. If a primer melody is not specified, melodies will be '
+    'generated from scratch.')
 
 LSTM_cell, reshapor, densor = train(FLAGS)
 inference_model = get_inference_model(FLAGS, LSTM_cell, reshapor, densor)
 
 
-
-
 tf.logging.set_verbosity('INFO')
-
-config = melody_rnn_config_flags.config_from_flags()
-
-generator = melody_rnn_sequence_generator.MelodyRnnSequenceGenerator(
-    model=melody_rnn_model.MelodyRnnModel(config),
-    details=config.details,
-    steps_per_quarter=config.steps_per_quarter,
-    checkpoint=None
-    )
 
 sequence_example_file = (FLAGS.sequence_example_train_file)
 sequence_example_file_paths = tf.gfile.Glob(os.path.expanduser(sequence_example_file))
 
-primer_events = get_primer_events(FLAGS, generator, config)
+primer_events = get_primer_events(FLAGS)
 print("primer_events:", primer_events)
-one_hot_input = encoded_event_sequence_to_one_hot(primer_events, FLAGS.notes_range)
+encoded_primer_events = get_encoded_events(FLAGS.encoding_config, primer_events)
+
+one_hot_input = encoded_event_sequence_to_one_hot(  encoded_primer_events,
+                                                    FLAGS.notes_range)
+
 print("one-hot primer_events shape:", one_hot_input.shape)
 print("one-hot primer_events:\n", one_hot_input)
-
 
 
 
@@ -97,7 +93,8 @@ print(X_initial.shape)
 a0 = np.zeros( (1,FLAGS.layer_size), dtype = int)
 c0 = np.zeros( (1,FLAGS.layer_size), dtype = int)
 
-model_output = inference_model.predict([X_initial,a0,c0],batch_size=FLAGS.predict_batch_size)
+model_output = inference_model.predict([X_initial,a0,c0],
+                                       batch_size=FLAGS.predict_batch_size)
 
 
 def model_output_to_one_hot_output(output):
@@ -112,17 +109,19 @@ def model_output_to_one_hot_output(output):
     # ret = np.rint(ret)
     return ret
 
-output = model_output_to_one_hot_output(model_output)
+one_hot_output = model_output_to_one_hot_output(model_output)
 
 # import ipdb; ipdb.set_trace()
 
 
-encoded_event_sequence = one_hot_to_encoded_event_sequence(output)
+encoded_output_events = one_hot_to_encoded_event_sequence(one_hot_output)
 
-print("encoded event sequence", encoded_event_sequence)
+print("encoded_output_events:", encoded_output_events)
 
-event_sequence_to_midi(FLAGS, generator, encoded_event_sequence, 1, config)
-
+output_to_midi( encoded_primer_events,
+                encoded_output_events,
+                FLAGS.output_dir,
+                "midi_name")
 
 '''
 
