@@ -3,6 +3,8 @@
 *.swp
 # Ignore TF Moduel file
 
+LSTM_Music_Generation/magenta/magenta_logdir
+
 LSTM_Music_Generation/tmp 
 *.tfrecord
 *.mid
