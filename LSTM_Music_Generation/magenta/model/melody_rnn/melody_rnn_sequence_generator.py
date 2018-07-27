@@ -153,10 +153,12 @@ class MelodyRnnSequenceGenerator(mm.BaseSequenceGenerator):
     qpm = (input_sequence.tempos[0].qpm
            if input_sequence and input_sequence.tempos
            else mm.DEFAULT_QUARTERS_PER_MINUTE)
+
     steps_per_second = mm.steps_per_quarter_to_steps_per_second(
         self.steps_per_quarter, qpm)
 
     generate_section = generator_options.generate_sections[0]
+
     if generator_options.input_sections:
       input_section = generator_options.input_sections[0]
       primer_sequence = mm.trim_note_sequence(

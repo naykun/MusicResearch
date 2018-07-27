@@ -76,7 +76,7 @@ generator = melody_rnn_sequence_generator.MelodyRnnSequenceGenerator(
     model=melody_rnn_model.MelodyRnnModel(config),
     details=config.details,
     steps_per_quarter=config.steps_per_quarter,
-    checkpoint=get_checkpoint()
+    checkpoint=None
     )
 
 sequence_example_file = (FLAGS.sequence_example_train_file)

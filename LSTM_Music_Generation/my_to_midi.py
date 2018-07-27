@@ -66,7 +66,7 @@ def event_sequence_to_midi(FLAGS, generator, encoded_event_sequence, index, conf
 
   primer_sequence = None
   
-  
+  # default is 120
   qpm = magenta.music.DEFAULT_QUARTERS_PER_MINUTE
   
 

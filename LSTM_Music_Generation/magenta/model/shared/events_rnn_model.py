@@ -458,16 +458,19 @@ class EventSequenceRnnModel(mm.BaseModel):
       modify_events_callback(
           self._config.encoder_decoder, event_sequences, inputs)
 
-    graph_initial_state = self._session.graph.get_collection('initial_state')
-    initial_states = state_util.unbatch(self._session.run(graph_initial_state))
+    # modified by Someday
+    # graph_initial_state = self._session.graph.get_collection('initial_state')
+    # initial_states = state_util.unbatch(self._session.run(graph_initial_state))
 
     # Beam search will maintain a state for each sequence consisting of the next
     # inputs to feed the model, and the current RNN state. We start out with the
     # initial full inputs batch and the zero state.
+
+    '''
     initial_state = ModelState(
         inputs=inputs[0], rnn_state=initial_states[0],
         control_events=control_events, control_state=control_state)
-
+    '''
 
     return list(event_sequences[0])
 

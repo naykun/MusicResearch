@@ -1,9 +1,7 @@
 # For logs
 *.txt
 *.swp
-#Ignore TF Moduel file
-*ckpt*
-checkpoint
+# Ignore TF Moduel file
 
 LSTM_Music_Generation/tmp 
 *.tfrecord
