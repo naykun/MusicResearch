@@ -23,6 +23,7 @@ import tensorflow as tf
 import numpy as np
 import magenta
 import keras
+import copy
 
 from magenta.model.melody_rnn import melody_rnn_config_flags
 from magenta.model.melody_rnn import melody_rnn_model
@@ -30,6 +31,9 @@ from magenta.model.melody_rnn import melody_rnn_sequence_generator
 
 from magenta.protobuf import generator_pb2
 from magenta.protobuf import music_pb2
+
+from magenta.music import melodies_lib
+from magenta.music import melody_encoder_decoder
 
 
 from sequence_example_lib import *
@@ -135,6 +139,42 @@ def event_sequence_to_midi(FLAGS, generator, encoded_event_sequence, index, conf
 
   tf.logging.info('Wrote %d MIDI files to %s',
                   index, FLAGS.output_dir)
+
+
+def single_events_to_midi(events_in, output_dir, name):
+    """
+
+    Uses the given encoded_event_sequence(events start from 0) to write MIDI files.
+
+    Args:
+      generator: The MelodyRnnSequenceGenerator to use for generation.
+      index: the midi file index
+      config: MelodyRnnModelConfig object
+    """
+
+    events = copy.deepcopy(events_in)
+
+    qpm = magenta.music.DEFAULT_QUARTERS_PER_MINUTE
+
+    encoding = melody_encoder_decoder.MelodyOneHotEncoding(48, 84)
+
+
+
+    for i,event in enumerate(events):
+        events[i] = encoding.decode_event(event)
+
+    melody = melodies_lib.Melody(events)
+    sequence = melody.to_sequence(qpm=qpm)
+
+    midi_filename = name+'.mid'
+    midi_path = os.path.join(output_dir, midi_filename)
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    magenta.music.sequence_proto_to_midi_file(sequence, midi_path)
+
+    tf.logging.info('Wrote %s.mid to %s', name, output_dir)
 
 
 def get_primer_events(FLAGS, generator, config):

@@ -141,14 +141,6 @@ class MelodyRnnSequenceGenerator(mm.BaseSequenceGenerator):
   the interface is in sequence_generator.py
   '''
   def _event_sequence_to_midi(self, input_sequence, generator_options, encoded_event_sequence, config):
-    if len(generator_options.input_sections) > 1:
-      raise mm.SequenceGeneratorException(
-          'This model supports at most one input_sections message, but got %s' %
-          len(generator_options.input_sections))
-    if len(generator_options.generate_sections) != 1:
-      raise mm.SequenceGeneratorException(
-          'This model supports only 1 generate_sections message, but got %s' %
-          len(generator_options.generate_sections))
 
     qpm = (input_sequence.tempos[0].qpm
            if input_sequence and input_sequence.tempos
