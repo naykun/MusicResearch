@@ -118,7 +118,8 @@ encoded_output_events = one_hot_to_encoded_event_sequence(one_hot_output)
 
 print("encoded_output_events:", encoded_output_events)
 
-output_to_midi( encoded_primer_events,
+output_to_midi( FLAGS.encoding_config,
+                encoded_primer_events,
                 encoded_output_events,
                 FLAGS.output_dir,
                 "midi_name")

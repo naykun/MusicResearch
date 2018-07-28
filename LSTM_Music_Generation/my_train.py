@@ -150,8 +150,11 @@ def train(FLAGS):
     X_val, labels_val, _ = get_numpy_from_tf_sequence_example(input_size=38,
                                     sequence_example_file_paths = val_sequence_example_file_paths,
                                     shuffle = False)
+
+
     X_train,labels_train = dataset_embedding(X_train, labels_train, maxlen, embedding_len)
     X_val,labels_val = dataset_embedding(X_val, labels_val, maxlen, embedding_len)
+
 
 
     model,LSTM_cell,reshapor,densor = get_train_model(FLAGS)

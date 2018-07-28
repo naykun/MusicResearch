@@ -54,7 +54,7 @@ def get_decoded_events(encoding_config, events_in):
         events[i] = encoding.decode_event(event)
     return events
 
-def events_to_midi(events_in, output_dir, name):
+def events_to_midi(encoding_config, events_in, output_dir, name):
     """
     events_in: 没有解码过的event_sequence
 
@@ -63,7 +63,7 @@ def events_to_midi(events_in, output_dir, name):
     qpm = magenta.music.DEFAULT_QUARTERS_PER_MINUTE
 
     # 改变encoding就在这里
-    events = get_decoded_events('basic_rnn', events)
+    events = get_decoded_events(encoding_config, events)
 
     melody = melodies_lib.Melody(events)
     sequence = melody.to_sequence(qpm=qpm)
@@ -76,7 +76,6 @@ def events_to_midi(events_in, output_dir, name):
 
     magenta.music.sequence_proto_to_midi_file(sequence, midi_path)
     tf.logging.info('Wrote %s.mid to %s', name, output_dir)
-
 
 def get_primer_events(FLAGS):
     """
@@ -97,7 +96,6 @@ def get_primer_events(FLAGS):
 
     return primer_events
 
-
 def one_hot_to_encoded_event_sequence(one_hot_output):
     return list(np.argmax(one_hot_output, axis=1))
 
@@ -108,10 +106,9 @@ def encoded_event_sequence_to_one_hot(encoded_event_sequence, input_size):
     one_hot = np.array(one_hot)
     return one_hot
 
-
-def output_to_midi( encoded_primer_events, encoded_output_events, output_dir, midi_name):
+def output_to_midi(encoding_config, encoded_primer_events, encoded_output_events, output_dir, midi_name):
     if encoded_primer_events == None:
-        events_to_midi(encoded_output_events, output_dir, midi_name)
+        events_to_midi(encoding_config, encoded_output_events, output_dir, midi_name)
     else:
         output_events = encoded_primer_events + encoded_output_events
-        events_to_midi(output_events, output_dir, midi_name)
+        events_to_midi(encoding_config, output_events, output_dir, midi_name)
