@@ -5,8 +5,9 @@
 *.pkl
 *.h5
 
-LSTM_Music_Generation/magenta/magenta_logdir
+Music_Text_Generation/*logdir
 
+LSTM_Music_Generation/magenta/magenta_logdir
 LSTM_Music_Generation/tmp 
 *.tfrecord
 *.mid
