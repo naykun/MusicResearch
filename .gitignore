@@ -2,6 +2,8 @@
 *.txt
 *.swp
 # Ignore TF Moduel file
+*.pkl
+*.h5
 
 LSTM_Music_Generation/magenta/magenta_logdir
 
