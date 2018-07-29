@@ -87,27 +87,32 @@ print("one-hot primer_events:\n", one_hot_input)
 
 
 
-X_initial = np.array([[one_hot_input[0]]])
+X_initial = np.array([[one_hot_input[i] for i in range(FLAGS.embedding_len)] ])
 print(X_initial.shape)
 # reshape(FLAGS.embedding_len, FLAGS.notes_range)
-a0 = np.zeros( (1,FLAGS.layer_size), dtype = int)
-c0 = np.zeros( (1,FLAGS.layer_size), dtype = int)
+a0 = np.random.rand(1,FLAGS.layer_size)
+c0 = np.random.rand(1,FLAGS.layer_size)
+
+# inference_model.summary()
 
 model_output = inference_model.predict([X_initial,a0,c0],
                                        batch_size=FLAGS.predict_batch_size)
 
 
 def model_output_to_one_hot_output(output):
-    ret = []
-    for i in output:
-        ret.append(list(i[0][0]))
+    # ret = []
+    # for i in output:
+    #     ret.append(list(i[0][0]))
 
-    ret = np.array(ret)
+    # ret = np.array(ret)
 
-    print("model output:", list(ret) )
-
+    # print("model output:", list(ret) )
+    # print(output)
+    indices = np.argmax(np.array(output),axis=2)
+    results = to_categorical(indices, num_classes=None)
     # ret = np.rint(ret)
-    return ret
+    print(results)
+    return results
 
 one_hot_output = model_output_to_one_hot_output(model_output)
 
@@ -122,7 +127,7 @@ output_to_midi( FLAGS.encoding_config,
                 encoded_primer_events,
                 encoded_output_events,
                 FLAGS.output_dir,
-                "midi_name")
+                "midi_name"+str(time.time()))
 
 '''
 

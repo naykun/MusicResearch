@@ -20,6 +20,12 @@ from sequence_example_lib import *
 import os
 
 
+def one_hot(x):
+    x = K.argmax(x)
+    x = tf.one_hot(x, 38) 
+    x = RepeatVector(1)(x)
+    return x
+
 def get_train_model_unroll(FLAGS):
 
     layer_size = FLAGS.layer_size
@@ -248,6 +254,7 @@ def get_inference_model(FLAGS, LSTM_cell, reshapor, densor):
 
     slicer = Lambda(lambda x:x[:,:,notes_range:])
     concator = keras.layers.Concatenate(axis=-1)
+    out_reshapor = Reshape((1,notes_range))
     # Define the input of your model with a shape 
     x0 = Input(shape=(embedding_len, notes_range))
     
@@ -272,13 +279,14 @@ def get_inference_model(FLAGS, LSTM_cell, reshapor, densor):
         # print("a shape:",a.shape)
         # Step 2.B: Apply Dense layer to the hidden state output of the LSTM_cell (≈1 line)
         out = densor(a)
-        out = reshapor(out)
         # Step 2.C: Append the prediction "out" to "outputs". out.shape = (None, 78) (≈1 line)
         outputs.append(out)
         
         # Step 2.D: Select the next value according to "out", and set "x" to be the one-hot representation of the
         #           selected value, which will be passed as the input to LSTM_cell on the next step. We have provided 
         #           the line of code you need to do this. 
+        out = Lambda(one_hot)(out)
+        out = out_reshapor(out)
         x = slicer(x)
         x = concator([x,out])
 
