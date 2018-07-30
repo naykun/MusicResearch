@@ -72,12 +72,11 @@ dataset_dir = FLAGS.dataset_dir
 
 date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
 
-exp_name = "%s_batchS%d_epochs%d_units%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
-                                                                        batch_size, epochs, units, maxlen, step,
+exp_name = "%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
+                                                                        batch_size, epochs, units, dense_size, maxlen, step,
                                                                         embedding_length, date_and_time)
 
 # In[ ]:
-
 
 
 train_dataset_path = os.path.join(dataset_dir, dataset_name+'_train.txt')
@@ -347,6 +346,7 @@ lr_scheduler = LearningRateScheduler(lr_schedule, verbose=0)
 # 参照下面代码加一下TensorBoard
 tb_callbacks = TensorBoard(log_dir=TB_log_dir)
 
+print_fn("*"*20+exp_name+"*"*20)
 print_fn('x_train shape:'+str(np.shape(x_train)) )
 print_fn('y_train shape:'+str(np.shape(y_train)) )
 
