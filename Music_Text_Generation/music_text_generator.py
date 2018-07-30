@@ -182,8 +182,15 @@ x_eval, y_eval = get_embedded_data(eval_text, maxlen, embedding_length)
 # In[8]:
 
 
+def print_fn(str):
+    print(str)
+    console_log_file = os.path.join(console_log_dir, 'console_output.txt')
+    with open(console_log_file, 'a+') as f:
+        print(str, file=f)
+
 def lr_schedule(epoch):
     # Learning Rate Schedule
+
     lr = 1e-1
     if epoch >= epochs * 0.9:
         lr *= 0.5e-3
@@ -193,7 +200,7 @@ def lr_schedule(epoch):
         lr *= 1e-2
     elif epoch >= epochs * 0.4:
         lr *= 1e-1
-    print('Learning rate: ', lr)
+    print_fn('Learning rate: ', lr)
 
     lr = 1e-3
     return lr
@@ -201,12 +208,6 @@ def lr_schedule(epoch):
 
 # In[9]:
 
-
-def print_fn(str):
-    print(str)
-    console_log_file = os.path.join(console_log_dir, 'console_output.txt')
-    with open(console_log_file, 'a+') as f:
-        print(str, file=f)
 
 
 # In[10]:
