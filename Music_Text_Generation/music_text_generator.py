@@ -361,8 +361,8 @@ history_callback = model.fit(x_train, y_train,
 acc_history = history_callback.history["acc"]
 max_acc = np.max(acc_history)
 print_fn('Experiment %s max accuracy:%f' % (exp_name, max_acc))
-max_acc_log_line = "%s\t%d\t%d\t%d\t%d\t%d\t%f" % (exp_name,
-                                                   epochs, units, maxlen, step, embedding_length, max_acc)
+max_acc_log_line = "%s\t%d\t%d\t%d\t%d\t%d\t%d\t%f" % (exp_name,
+                                                   epochs, units, dense_size, maxlen, step, embedding_length, max_acc)
 
 print(max_acc_log_line, file=open(max_acc_log_path, 'a'))
 
