@@ -2,9 +2,12 @@
 *.txt
 *.swp
 # Ignore TF Moduel file
+*.pkl
+*.h5
+
+Music_Text_Generation/*logdir
 
 LSTM_Music_Generation/magenta/magenta_logdir
-
 LSTM_Music_Generation/tmp 
 *.tfrecord
 *.mid

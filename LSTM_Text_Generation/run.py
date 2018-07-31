@@ -20,3 +20,5 @@ if __name__ == '__main__':
     # print(cmd)
 
     print('\n'.join(cmd))
+
+
