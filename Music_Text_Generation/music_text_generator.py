@@ -200,7 +200,7 @@ def lr_schedule(epoch):
         lr *= 1e-2
     elif epoch >= epochs * 0.4:
         lr *= 1e-1
-    print_fn('Learning rate: ', lr)
+    print_fn('Learning rate: %f' % lr)
 
     lr = 1e-3
     return lr
@@ -247,7 +247,7 @@ def sample(preds, temperature=1.0):
 # In[12]:
 
 
-def generate_music(epoch, text, diversity, start_index):
+def generate_music(epoch, text, diversity, start_index, is_train=false):
     print_fn('----- diversity: %.1f' % diversity)
 
     generated = ''
@@ -272,10 +272,13 @@ def generate_music(epoch, text, diversity, start_index):
         sys.stdout.write(next_char)
         sys.stdout.flush()
 
-    if start_index == 0:
-        log_name = "epoch%d_first_diversity%02d" % (epoch + 1, int(diversity * 10))
+    if is_train:
+        log_name = "epoch%d_train_diversity%02d" % (epoch + 1, int(diversity * 10))
     else:
-        log_name = "epoch%d_random_diversity%02d" % (epoch + 1, int(diversity * 10))
+        if start_index == 0:
+            log_name = "epoch%d_first_diversity%02d" % (epoch + 1, int(diversity * 10))
+        else:
+            log_name = "epoch%d_random_diversity%02d" % (epoch + 1, int(diversity * 10))
 
     text_log_path = os.path.join(text_log_dir, log_name + ".txt")
     with open(text_log_path, "w") as text_log_file:
@@ -295,7 +298,7 @@ def generate_music(epoch, text, diversity, start_index):
     print_fn("Save model %s.h5 to %s" % (model_name, model_log_dir))
 
 
-def baseline_music(epoch, text, start_index):
+def baseline_music(epoch, text, start_index, is_train=false):
     print_fn('----- baseline')
 
     generated = ''
@@ -305,10 +308,13 @@ def baseline_music(epoch, text, start_index):
     generated += eval_text[start_index + maxlen: min(len(text), start_index + maxlen + generate_length)]
     sys.stdout.write(generated)
 
-    if start_index == 0:
-        log_name = "epoch%d_first_baseline" % (epoch + 1)
+    if is_train:
+        log_name = "epoch%d_train_baseline" % (epoch + 1)
     else:
-        log_name = "epoch%d_random_baseline" % (epoch + 1)
+        if start_index == 0:
+            log_name = "epoch%d_first_baseline" % (epoch + 1)
+        else:
+            log_name = "epoch%d_random_baseline" % (epoch + 1)
 
     text_log_path = os.path.join(text_log_dir, log_name + ".txt")
     with open(text_log_path, "w") as text_log_file:
@@ -335,9 +341,12 @@ def on_epoch_end(epoch, logs):
 
     baseline_music(epoch=epoch, text=eval_text, start_index=0)
     baseline_music(epoch=epoch, text=eval_text, start_index=start_index)
+    baseline_music(epoch=epoch, text=eval_text, start_index=start_index, is_train=True)
+
     for diversity in [0.2, 0.5, 0.8, 1.0, 1.2]:
         generate_music(epoch=epoch, text=eval_text, diversity=diversity, start_index=0)
         generate_music(epoch=epoch, text=eval_text, diversity=diversity, start_index=start_index)
+        generate_music(epoch=epoch, text=eval_text, diversity=diversity, start_index=start_index, is_train=True)
 
 
 # In[14]:
@@ -370,13 +379,13 @@ print(max_acc_log_line, file=open(max_acc_log_path, 'a'))
 '''
 
 python3 music_text_generator.py --batch_size=1024 \
-    --epochs=10 \
-    --units=128 \
-    --maxlen=48 \
+    --epochs=40 \
+    --units=512 \
+    --maxlen=16 \
     --generate_length=400 \
-    --dense_size=3 \
-    --step=8 \
-    --embedding_length=4 \
+    --dense_size=0 \
+    --step=1 \
+    --embedding_length=16 \
     --dataset_name=Bach \
     --dataset_dir=datasets/Bach/
 
