@@ -24,6 +24,7 @@ import shutil
 def get_text_train_data(time_step = 10, infor_length = 15, how_much_part = 10):
 
     path = get_file('nietzsche.txt', origin='https://s3.amazonaws.com/text-datasets/nietzsche.txt')
+    path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Wikifonia_to_text.txt'
     with io.open(path, encoding='utf-8') as f:
         text = f.read().lower()
     print('corpus length:', len(text))

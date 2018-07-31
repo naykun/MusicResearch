@@ -18,11 +18,10 @@ import sys
 from sequence_example_lib import *
 import os
 import tensorflow as tf
+infor_length = int(sys.argv[1])
 
-# infor_length = int(sys.argv[1])
-
-sequence_example_file = ('~/sss/Mag/Mag_Data/data_from_WH/Transmit/S_E_BasicRNN_midishare_bach20180725/training_melodies.tfrecord')
-
+sequence_example_file = ('~/sss/Mag/Mag_Data/data_from_WH/Transmit/S_E_BasicRNN_Wikifonia_20180725/training_melodies.tfrecord')
+sequence_example_file = ('~/sss/Mag/Mag_Data/data_from_WH/S_E_BasicRNN_Clean_Midi_LargeData_20180725/training_melodies.tfrecord')
 sequence_example_file_paths = tf.gfile.Glob(
     os.path.expanduser(sequence_example_file))
 
@@ -81,22 +80,13 @@ class vector_pair:
             self.labels[new_label] = 1
         else:
             self.labels[new_label] += 1
-    # def get_acc(self):
-    #     acc = 0.
-    #     total_times = 0.
-    #     for var in self.labels:
-    #         total_times += self.labels[var]
-    #         acc = max(acc,self.labels[var])
-    #     acc = acc / total_times
-    #     return acc
-    #Average
     def get_acc(self):
         acc = 0.
         total_times = 0.
         for var in self.labels:
             total_times += self.labels[var]
-            acc += self.labels[var]**2
-        acc = acc / total_times**2
+            acc = max(acc,self.labels[var])
+        acc = acc / total_times
         return acc
     def get_total_times_in_dataset(self):
         total_times = 0
@@ -149,24 +139,17 @@ def run(length):
     except Exception as e:
         print(e)
 
-    max_acc_log = './max_acc_vector_average_bach_test.txt'
+    max_acc_log = './max_acc_vector_max.txt'
     # num / Acc
     print('%d \t %f' % (length, acc), file=open(max_acc_log, 'a'))
     # print('Fail hash case:', vector_pair.fail_hash_case)
     # import ipdb;ipdb.set_trace()
-    # del train_data
-    # del train_label
-    # del text_pairs_hash
-    train_data = None
-    train_label = None
-    text_pairs_hash = None
-    text_pairs_hash = None
+    del train_data
+    del train_label
+    del text_pairs_hash
+
     import gc
     gc.collect()
 
-for i in [10,9,8,5,1]:
-    run(i)
-
-
-
+run(infor_length)
 # run(2)
