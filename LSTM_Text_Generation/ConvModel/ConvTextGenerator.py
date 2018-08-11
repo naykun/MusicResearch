@@ -26,7 +26,7 @@ import sys
 import io
 import os
 import shutil
-from ConvModel import get_conv1d_model, get_lstm_model, get_conv1d_resnet, get_complex_model
+from ConvModel import *
 
 if(len(sys.argv)!=1):
     maxlen = int(sys.argv[2])
@@ -36,7 +36,7 @@ else:
     how_much_part = 10
 
 epochs = 100
-batch_size = 256
+batch_size = 1024
 # def lr_schedule(epoch):
 #     #Learning Rate Schedule
 #     lr = 1e-1
@@ -67,7 +67,7 @@ def lr_schedule(epoch):
     print('Learning rate: ', lr)
     return lr
 
-exp_name = 'Complex_WinSize%d_BS%d_%dpart_epoch%d' % (maxlen, batch_size, how_much_part, epochs)
+exp_name = 'ComplexResnetMelodyNoL2_WinSize%d_BS%d_%dpart_epoch%d' % (maxlen, batch_size, how_much_part, epochs)
 log = '../res/' + exp_name + '.txt'
 tb_log = '../TB_logdir/LSTM/WinSize_DenseEmbedding/' + exp_name
 max_acc_log = '../res/max_acc.txt'
@@ -127,7 +127,9 @@ train_output_shape = (len(chars))
 # model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_resnet(input_shape=train_input_shape,output_shape = train_output_shape)
-model = get_complex_model(input_shape_melody=train_input_shape, input_shape_accom=train_input_shape,  output_shape=train_output_shape)
+# model = get_complex_model(input_shape_melody=train_input_shape, input_shape_accom=train_input_shape,  output_shape=train_output_shape)
+model = get_complex_model_resNet_melody(input_shape_melody=train_input_shape, input_shape_accom=train_input_shape,  output_shape=train_output_shape)
+
 model.summary()
 optimizer = Adam(lr=lr_schedule(0))
 
@@ -228,7 +230,7 @@ class LRTensorBoard(TensorBoard):
 tb_callbacks = LRTensorBoard(log_dir = tb_log)
 
 
-history_callback = model.fit([x,x], y, validation_split=0.2,
+history_callback = model.fit([x,x], y, validation_split=0.1,
           verbose = 1,
           batch_size=batch_size,
           epochs=epochs,

@@ -1,3 +1,0 @@
-Add the embedding length parameters(InfoLen)
-Run Experiment:
-sh server_dataset.sh 

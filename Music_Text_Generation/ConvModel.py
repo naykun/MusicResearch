@@ -20,8 +20,8 @@ def get_complex_model(input_shape_melody, input_shape_accom,  output_shape):
                    padding='same', activation='sigmoid', strides=1)(main_melody)
         # x = merge([main_melody, mask], output_shape=input_shape_melody[0], name='attention_mul', mode='mul')
         x = multiply([main_melody, mask],name='attention_mul')
-        x = LocallyConnected1D(filters=32, kernel_size=32, padding='valid', activation='sigmoid',strides=1)(x)
-        x = LocallyConnected1D(filters=64, kernel_size=16, padding='valid', activation='sigmoid', strides=1)(x)
+        x = LocallyConnected1D(filters=16, kernel_size=32, padding='valid', activation='sigmoid',strides=1)(x)
+        x = LocallyConnected1D(filters=32, kernel_size=16, padding='valid', activation='sigmoid', strides=1)(x)
         x = GlobalMaxPooling1D()(x)
         x = Dense(melody_feature_length, activation='sigmoid')(x)
         return x
@@ -42,6 +42,7 @@ def get_complex_model(input_shape_melody, input_shape_accom,  output_shape):
     input_accom = Input(shape=input_shape_accom)
 
     # TODO part of the input_melody
+    # import ipdb; ipdb.set_trace()
     input_accom_ = get_current_melody_feature(input_accom,input_melody)
     input_melody_ = get_melody_feature(input_melody)
 
@@ -59,7 +60,7 @@ def get_complex_model_resNet_melody(input_shape_melody, input_shape_accom,  outp
     def get_melody_feature(main_melody):
         model = get_conv1d_resnet(input_shape_melody,melody_feature_length, input_tensor=main_melody)
         return model.output
-
+    
     def get_current_melody_feature(before_accom, current_melody):
         before_accom = Conv1D(filters=32, kernel_size=4, padding='same', activation='relu',strides=1)(before_accom)
         before_accom = GlobalMaxPooling1D()(before_accom)
@@ -89,11 +90,11 @@ def get_complex_model_resNet_melody(input_shape_melody, input_shape_accom,  outp
 
 def get_conv1d_model(input_shape, output_shape):
     inputs = Input(shape=input_shape)
-    xxx = Conv1D(filters=16, kernel_size=40, padding='same', activation='sigmoid', strides=1)(inputs)
-    xxx2 = Conv1D(filters=16, kernel_size=40, padding='same', activation='sigmoid', strides=1)(inputs)
+    xxx = Conv1D(filters=16, kernel_size=32, padding='same', activation='sigmoid', strides=1)(inputs)
+    xxx2 = Conv1D(filters=16, kernel_size=32, padding='same', activation='sigmoid', strides=1)(inputs)
     xxx = merge([xxx, xxx2], output_shape=32, name='attention_mul', mode='mul')
-    xxx = LocallyConnected1D(filters=32, kernel_size=20, padding='same', activation='sigmoid',strides=1)(xxx)
-    xxx = LocallyConnected1D(filters=64, kernel_size=10, padding='same', activation='sigmoid', strides=1)(xxx)
+    xxx = LocallyConnected1D(filters=32, kernel_size=32, padding='valid', activation='sigmoid',strides=1)(xxx)
+    xxx = LocallyConnected1D(filters=64, kernel_size=16, padding='valid', activation='sigmoid', strides=1)(xxx)
     # we use max pooling:
     xxx = GlobalMaxPooling1D()(xxx)
     xxx = Dense(output_shape)(xxx)

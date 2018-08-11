@@ -1,4 +1,0 @@
-python3 text_generator即可启动实验
-
-sh server_dataset.sh
-即可启动多卡实验用于参数探索
