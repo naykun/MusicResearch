@@ -24,12 +24,14 @@ from keras.optimizers import RMSprop, Adam
 from keras.utils.data_utils import get_file
 from keras.callbacks import TensorBoard
 from keras.utils.np_utils import to_categorical
+from keras.models import load_model
 
+import re
 
+import sys
 import time
 import numpy as np
 import random
-import sys
 import os
 from math import *
 
@@ -42,42 +44,83 @@ from my_to_midi import *
 
 
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_integer('batch_size', 1024, 'LSTM Layer Units Number')
-tf.app.flags.DEFINE_integer('epochs', 5, 'Total epochs')
-tf.app.flags.DEFINE_integer('maxlen', 48, 'Max length of a sentence')
-tf.app.flags.DEFINE_integer('generate_length', 400, 'Number of steps of generated music')
-tf.app.flags.DEFINE_integer('units', 128, 'LSTM Layer Units Number')
-tf.app.flags.DEFINE_integer('dense_size', 0, 'Dense Layer Size')
-tf.app.flags.DEFINE_integer('step', 8, 'Step length when building dataset')
-tf.app.flags.DEFINE_integer('embedding_length', 1, 'Embedding length')
 tf.app.flags.DEFINE_string('dataset_name', 'Bach', 'Dataset name will be the prefix of exp_name')
 tf.app.flags.DEFINE_string('dataset_dir', 'datasets/Bach/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
+tf.app.flags.DEFINE_integer('model_epoch', 20, 'To define which model to load')
+tf.app.flags.DEFINE_string('model_dir', '', 'Model h5 directory')
+tf.app.flags.DEFINE_string('exp_name', '', 'Experiment name')
+tf.app.flags.DEFINE_integer('generate_length', 400, 'Number of steps of generated music')
+tf.app.flags.DEFINE_integer('generate_num', 1, 'Number of steps of generated music')
+
 
 # In[2]:
 
 
-batch_size = FLAGS.batch_size
-epochs = FLAGS.epochs
-units = FLAGS.units
-dense_size = FLAGS.dense_size
 
-
-maxlen = FLAGS.maxlen
-generate_length = FLAGS.generate_length
-step = FLAGS.step
-embedding_length = FLAGS.embedding_length
 dataset_name = FLAGS.dataset_name
 dataset_dir = FLAGS.dataset_dir
+generate_length = FLAGS.generate_length
+exp_name = FLAGS.exp_name
+model_epoch = FLAGS.model_epoch
+model_path = os.path.join(FLAGS.model_dir, exp_name, 'epoch%d.h5' % model_epoch)
+
+exp_pat = r"([a-zA-Z]*)_batchS(\d*)_epochs(\d*)_units(\d*)_denseS(\d*)_maxL(\d*)_step(\d*)_embeddingL(\d*)_(.*)"
+exp_mat = re.match(exp_pat, exp_name)
+exp_pat2 = r"([a-zA-Z]*)_batchS(\d*)_epochs(\d*)_units(\d*)_maxL(\d*)_step(\d*)_embeddingL(\d*)_(.*)"
+exp_mat2 = re.match(exp_pat2, exp_name)
+
+if exp_mat:
+    batch_size = int(exp_mat.group(2))
+    epochs = int(exp_mat.group(3))
+    units = int(exp_mat.group(4))
+    dense_size = int(exp_mat.group(5))
+    maxlen = int(exp_mat.group(6))
+    step = int(exp_mat.group(7))
+    embedding_length = int(exp_mat.group(8))
+    date_and_time = exp_mat.group(9)
+elif exp_mat2:
+    exp_mat = re.match(exp_pat2, exp_name)
+    batch_size = int(exp_mat.group(2))
+    epochs = int(exp_mat.group(3))
+    units = int(exp_mat.group(4))
+    maxlen = int(exp_mat.group(5))
+    step = int(exp_mat.group(6))
+    embedding_length = int(exp_mat.group(7))
+    date_and_time = exp_mat.group(8)
+else:
+    print("No match!")
 
 
-date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
+# In[6]:
+generate_log_dir = os.path.join("Generate_logdir/", exp_name)
+midi_log_dir = os.path.join(generate_log_dir, "midi")
+text_log_dir = os.path.join(generate_log_dir, "text")
+console_log_dir = os.path.join(generate_log_dir, "console")
 
-exp_name = "%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
-                                                                        batch_size, epochs, units, dense_size, maxlen, step,
-                                                                        embedding_length, date_and_time)
+new_date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
+
+
+def make_log_dirs(dirs):
+    for dir in dirs:
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+
+
+dirs = [generate_log_dir, midi_log_dir, text_log_dir, console_log_dir]
+make_log_dirs(dirs)
+
+
+
+def print_fn(str):
+    print(str)
+    console_log_file = os.path.join(console_log_dir, 'console_output.txt')
+    with open(console_log_file, 'a+') as f:
+        print(str, file=f)
+
+
+print_fn("*"*20+exp_name+"*"*20)
 
 # In[ ]:
-
 
 train_dataset_path = os.path.join(dataset_dir, dataset_name+'_train.txt')
 eval_dataset_path = os.path.join(dataset_dir, dataset_name+'_eval.txt')
@@ -86,13 +129,13 @@ with open(train_dataset_path, "r") as train_file:
     train_text = train_file.read().lower()
     train_file.close()
 
-print('Train dataset length:', len(train_text))
+print_fn('Train dataset length: %d' % len(train_text))
 
 with open(eval_dataset_path, "r") as eval_file:
     eval_text = eval_file.read().lower()
     eval_file.close()
 
-print('Eval dataset length:', len(eval_text))
+print_fn('Eval dataset length: %d' % len(eval_text))
 
 # In[3]:
 
@@ -102,40 +145,14 @@ print('total chars:', len(chars))
 char_indices = dict((c, i) for i, c in enumerate(chars))
 indices_char = dict((i, c) for i, c in enumerate(chars))
 
-
 # wikifonia: 238w chars
-
-
 # In[4]:
-
 
 def text_to_events(str):
     ret = []
     for i in str:
         ret.append(char_indices[i])
     return ret
-
-# In[6]:
-
-
-log_dir = os.path.join("logdir/", exp_name)
-TB_log_dir = os.path.join('TB_logdir/', exp_name)
-console_log_dir = os.path.join(log_dir, "console")
-model_log_dir = os.path.join('Model_logdir', exp_name)
-text_log_dir = os.path.join(log_dir, "text")
-midi_log_dir = os.path.join(log_dir, "midi")
-
-
-def make_log_dirs(dirs):
-    for dir in dirs:
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-
-
-dirs = [log_dir, TB_log_dir, console_log_dir, model_log_dir, text_log_dir, midi_log_dir]
-make_log_dirs(dirs)
-
-max_acc_log_path = os.path.join("logdir/", "max_acc_log.txt")
 
 
 
@@ -173,75 +190,29 @@ def get_embedded_data(text, maxlen, embedding_length):
 
 # In[7]:
 
-
-
-print('Vectorization...')
+print_fn('Vectorization...')
 x_train, y_train = get_embedded_data(train_text, maxlen, embedding_length)
 x_eval, y_eval = get_embedded_data(eval_text, maxlen, embedding_length)
 
-# In[8]:
-
-
-def print_fn(str):
-    print(str)
-    console_log_file = os.path.join(console_log_dir, 'console_output.txt')
-    with open(console_log_file, 'a+') as f:
-        print(str, file=f)
-
-def lr_schedule(epoch):
-    # Learning Rate Schedule
-
-    lr = 1e-1
-    if epoch >= epochs * 0.9:
-        lr *= 0.5e-3
-    elif epoch >= epochs * 0.8:
-        lr *= 1e-3
-    elif epoch >= epochs * 0.6:
-        lr *= 1e-2
-    elif epoch >= epochs * 0.4:
-        lr *= 1e-1
-    print_fn('Learning rate: %f' % lr)
-
-    lr = 1e-3
-    return lr
-
-
-# In[9]:
-
-
-
-# In[10]:
-
 
 # build the model: a single LSTM
-print_fn('Build model...')
+print_fn('Load model...')
+model = load_model(model_path)
+model.summary()
 
-model = Sequential()
-
-if dense_size != 0:
-    model.add(Dense(dense_size,input_shape=(maxlen, len(chars)*embedding_length )))
-    model.add(LSTM(units))
-else:
-    model.add(LSTM(units, input_shape=(maxlen, len(chars)*embedding_length )))
-
-model.add(Dense(len(chars)))
-model.add(Activation('softmax'))
-
-optimizer = Adam(lr=lr_schedule(0))
-model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-model.summary(print_fn=print_fn)
 
 # In[11]:
-
-
 def sample(preds, temperature=1.0):
     # helper function to sample an index from a probability array
-    preds = np.asarray(preds).astype('float64')
-    preds = np.log(preds) / temperature
-    exp_preds = np.exp(preds)
-    preds = exp_preds / np.sum(exp_preds)
-    probas = np.random.multinomial(1, preds, 1)
-    return np.argmax(probas)
+    if temperature == 0:
+        return np.argmax(preds)
+    else:
+        preds = np.asarray(preds).astype('float64')
+        preds = np.log(preds) / temperature
+        exp_preds = np.exp(preds)
+        preds = exp_preds / np.sum(exp_preds)
+        probas = np.random.multinomial(1, preds, 1)
+        return np.argmax(probas)
 
 
 # In[12]:
@@ -273,12 +244,14 @@ def generate_music(epoch, text, diversity, start_index, is_train=False):
         sys.stdout.flush()
 
     if is_train:
-        log_name = "epoch%d_train_diversity%02d" % (epoch + 1, int(diversity * 10))
+        log_name = "epoch%d_train_diversity%02d" % (epoch, int(diversity * 10))
     else:
         if start_index == 0:
-            log_name = "epoch%d_first_diversity%02d" % (epoch + 1, int(diversity * 10))
+            log_name = "epoch%d_first_diversity%02d" % (epoch, int(diversity * 10))
         else:
-            log_name = "epoch%d_random_diversity%02d" % (epoch + 1, int(diversity * 10))
+            log_name = "epoch%d_random_diversity%02d" % (epoch, int(diversity * 10))
+
+    log_name = new_date_and_time+"_"+log_name
 
     text_log_path = os.path.join(text_log_dir, log_name + ".txt")
     with open(text_log_path, "w") as text_log_file:
@@ -288,14 +261,9 @@ def generate_music(epoch, text, diversity, start_index, is_train=False):
     print_fn("Write %s.txt to %s" % (log_name, text_log_dir))
 
     events = text_to_events(generated)
-    events_to_midi('basic_rnn', 160, events, midi_log_dir, log_name)
+    events_to_midi('basic_rnn', events, midi_log_dir, log_name)
 
     print_fn("Write %s.midi to %s" % (log_name, midi_log_dir))
-
-    model_name = "epoch%d.h5" % (epoch+1)
-    model_path = os.path.join(model_log_dir, model_name)
-    model.save(model_path)
-    print_fn("Save model %s.h5 to %s" % (model_name, model_log_dir))
 
 
 def baseline_music(epoch, text, start_index, is_train=False):
@@ -305,20 +273,18 @@ def baseline_music(epoch, text, start_index, is_train=False):
     sentence = text[start_index: start_index + maxlen]
     generated += sentence
 
-    if is_train:
-        generated += text[start_index + maxlen: min(len(text), start_index + maxlen + generate_length)]
-    else:
-        generated += text[start_index + maxlen: min(len(text), start_index + maxlen + generate_length)]
-
+    generated += eval_text[start_index + maxlen: min(len(text), start_index + maxlen + generate_length)]
     sys.stdout.write(generated)
 
     if is_train:
-        log_name = "epoch%d_train_baseline" % (epoch + 1)
+        log_name = "epoch%d_train_baseline" % epoch
     else:
         if start_index == 0:
-            log_name = "epoch%d_first_baseline" % (epoch + 1)
+            log_name = "epoch%d_first_baseline" % epoch
         else:
-            log_name = "epoch%d_random_baseline" % (epoch + 1)
+            log_name = "epoch%d_random_baseline" % epoch
+
+    log_name = new_date_and_time+"_"+log_name
 
     text_log_path = os.path.join(text_log_dir, log_name + ".txt")
     with open(text_log_path, "w") as text_log_file:
@@ -328,78 +294,50 @@ def baseline_music(epoch, text, start_index, is_train=False):
     print_fn("Write %s.txt to %s" % (log_name, text_log_dir))
 
     events = text_to_events(generated)
-    events_to_midi('basic_rnn', 160, events, midi_log_dir, log_name)
+    events_to_midi('basic_rnn', events, midi_log_dir, log_name)
 
     print_fn("Write %s.midi to %s" % (log_name, midi_log_dir))
 
 
-def on_epoch_end(epoch, logs):
-    # Function invoked at end of each epoch. Prints generated text.
-    if (epoch+1) % (epochs // 5) != 0:
-        return
+def generate(epoch):
 
     print_fn("")
     print_fn('----- Generating Music after Epoch: %d' % epoch)
 
     start_index = random.randint(0, len(eval_text) - maxlen - 1)
 
-    baseline_music(epoch=epoch, text=eval_text, start_index=0)
+    # baseline_music(epoch=epoch, text=eval_text, start_index=0)
     baseline_music(epoch=epoch, text=eval_text, start_index=start_index)
     baseline_music(epoch=epoch, text=train_text, start_index=start_index, is_train=True)
 
-    for diversity in [0.2, 0.5, 0.8, 1.0, 1.2]:
-        generate_music(epoch=epoch, text=eval_text, diversity=diversity, start_index=0)
+    for diversity in [0.2, 0.5, 1.0, 1.2]:
+        # generate_music(epoch=epoch, text=eval_text, diversity=diversity, start_index=0)
         generate_music(epoch=epoch, text=eval_text, diversity=diversity, start_index=start_index)
         generate_music(epoch=epoch, text=train_text, diversity=diversity, start_index=start_index, is_train=True)
 
 
 # In[14]:
-
-print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
-lr_scheduler = LearningRateScheduler(lr_schedule, verbose=0)
-# 参照下面代码加一下TensorBoard
-tb_callbacks = TensorBoard(log_dir=TB_log_dir)
-
 print_fn("*"*20+exp_name+"*"*20)
 print_fn('x_train shape:'+str(np.shape(x_train)) )
 print_fn('y_train shape:'+str(np.shape(y_train)) )
 
-history_callback = model.fit(x_train, y_train,
-                             validation_data=(x_eval, y_eval),
-                             verbose=1,
-                             batch_size=batch_size,
-                             epochs=epochs,
-                             callbacks=[tb_callbacks, lr_scheduler, print_callback])
-
-acc_history = history_callback.history["acc"]
-max_acc = np.max(acc_history)
-print_fn('Experiment %s max accuracy:%f' % (exp_name, max_acc))
-max_acc_log_line = "%s\t%d\t%d\t%d\t%d\t%d\t%d\t%f" % (exp_name,
-                                                   epochs, units, dense_size, maxlen, step, embedding_length, max_acc)
-
-print(max_acc_log_line, file=open(max_acc_log_path, 'a'))
-
+for i in range(FLAGS.generate_num):
+    new_date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
+    generate(model_epoch)
 
 '''
 
 
-rlaunch --cpu=4 --gpu=1 --memory=16000 --preemptible=no bash
+rlaunch --cpu=4 --gpu=1 --memory=8000 bash
 
 
-python3 music_text_generator.py --batch_size=1024 \
-    --epochs=40 \
-    --units=512 \
-    --maxlen=32 \
-    --generate_length=400 \
-    --dense_size=16 \
-    --step=1 \
-    --embedding_length=8 \
-    --dataset_name=Beethoven \
-    --dataset_dir=datasets/Beethoven/
+python3 generate_from_model_snapshot.py --dataset_name=Bach \
+--dataset_dir=datasets/Bach \
+--model_epoch=200 \
+--model_dir=Model_logdir \
+--exp_name=Bach_batchS1024_epochs200_units512_maxL32_step1_embeddingL8_2018-07-30_102638 \
+--generate_length=400 \
+--generate_num=2
 
-
-
-
-rlanuch --cpu=4 -- python3 --
 
 '''

@@ -77,6 +77,32 @@ def events_to_midi(encoding_config, events_in, output_dir, name):
     magenta.music.sequence_proto_to_midi_file(sequence, midi_path)
     tf.logging.info('Wrote %s.mid to %s', name, output_dir)
 
+
+'''
+def events_to_midi(encoding_config, qpm_in,  events_in, output_dir, name):
+    """
+    events_in: 没有解码过的event_sequence
+
+    """
+    events = copy.deepcopy(events_in)
+    qpm = qpm_in
+
+    # 改变encoding就在这里
+    events = get_decoded_events(encoding_config, events)
+
+    melody = melodies_lib.Melody(events)
+    sequence = melody.to_sequence(qpm=qpm)
+
+    midi_filename = name+'.mid'
+    midi_path = os.path.join(output_dir, midi_filename)
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    magenta.music.sequence_proto_to_midi_file(sequence, midi_path)
+    tf.logging.info('Wrote %s.mid to %s', name, output_dir)
+'''
+
 def get_primer_events(FLAGS):
     """
     return primer melody as event_sequecne, in python-list form
