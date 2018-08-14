@@ -5,10 +5,10 @@ from keras.layers import Input, LSTM, Dense
 import numpy as np
 
 batch_size = 64  
-epochs = 100  
+epochs = 500  
 latent_dim = 256 
 num_samples = 10000  
-data_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/TextMelody/Bach/Bach_train.txt'
+data_path = 'reverse_train_data'
 
 
 
@@ -26,7 +26,7 @@ for line in lines[: min(num_samples, len(lines) - 1)]:
     
     #reverse as target
     input_melody = line
-    target_melody = reversed(input_melody)
+    target_melody = input_melody[::-1]
 
 
     target_melody = '\t' + target_melody + '\n'
@@ -156,10 +156,10 @@ def decode_sequence(input_seq):
         states_value = [h, c]
     return decoded_sentence
 
-
-for seq_index in range(100):
-    input_seq = encoder_input_data[seq_index: seq_index + 1]
-    decoded_sentence = decode_sequence(input_seq)
-    print('-')
-    print('Input sentence:', input_melodies[seq_index])
-    print('Decoded sentence:', decoded_sentence)
+with open('result.txt','w') as fout:
+    for seq_index in range(100):
+        input_seq = encoder_input_data[seq_index: seq_index + 1]
+        decoded_sentence = decode_sequence(input_seq)
+        fout.write('-\n')
+        fout.write('Input sentence:'+ input_melodies[seq_index]+'\n')
+        fout.write('Decoded sentence:'+decoded_sentence+'\n')
