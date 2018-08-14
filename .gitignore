@@ -1,5 +1,6 @@
 # For logs
 TB_logdir
+TB_log
 *.txt
 *.swp
 # Ignore TF Moduel file

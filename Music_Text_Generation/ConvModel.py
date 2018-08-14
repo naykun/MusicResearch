@@ -3,13 +3,56 @@ from keras.callbacks import LambdaCallback
 from keras.models import Sequential,Model
 from keras.layers import Dense, Activation, LSTM, Input, \
     Reshape, MaxPooling1D, Conv1D, Dropout,GlobalMaxPooling1D, \
-    LocallyConnected1D,BatchNormalization,AveragePooling1D,Flatten,Lambda,merge,concatenate,multiply
+    LocallyConnected1D,BatchNormalization,AveragePooling1D,Flatten, \
+    AtrousConvolution1D, Lambda,merge,concatenate,multiply, UpSampling1D
 from keras.optimizers import RMSprop, Adam
 import keras
 import numpy as np
 from keras.regularizers import l2
 
 melody_feature_length = 200
+
+def get_complex_model(input_shape_melody, input_shape_accom,  output_shape):
+    note_length = input_shape_melody[1]
+
+    def get_melody_feature(main_melody):
+        #Dense Attention or Conv?
+        mask = Conv1D(filters=input_shape_melody[1], kernel_size=4,
+                   padding='same', activation='sigmoid', strides=1)(main_melody)
+        # x = merge([main_melody, mask], output_shape=input_shape_melody[0], name='attention_mul', mode='mul')
+        x = multiply([main_melody, mask],name='attention_mul')
+        x = LocallyConnected1D(filters=16, kernel_size=32, padding='valid', activation='sigmoid',strides=1)(x)
+        x = LocallyConnected1D(filters=32, kernel_size=16, padding='valid', activation='sigmoid', strides=1)(x)
+        x = GlobalMaxPooling1D()(x)
+        x = Dense(melody_feature_length, activation='sigmoid')(x)
+        return x
+
+    def get_current_melody_feature(before_accom, current_melody):
+        before_accom = Conv1D(filters=32, kernel_size=4, padding='same', activation='relu',strides=1)(before_accom)
+        before_accom = GlobalMaxPooling1D()(before_accom)
+
+        current_melody = Conv1D(filters=16, kernel_size=8, padding='same', activation='relu',strides=1)(current_melody)
+        current_melody = Conv1D(filters=32, kernel_size=4, padding='same', activation='relu',strides=1)(current_melody)
+        current_melody = GlobalMaxPooling1D()(current_melody)
+
+        x = concatenate([before_accom,current_melody])
+        x = Dense(melody_feature_length, activation='sigmoid')(x)
+        return x
+
+    input_melody = Input(shape=input_shape_melody)
+    input_accom = Input(shape=input_shape_accom)
+
+    # TODO part of the input_melody
+    # import ipdb; ipdb.set_trace()
+    input_accom_ = get_current_melody_feature(input_accom,input_melody)
+    input_melody_ = get_melody_feature(input_melody)
+
+    x = concatenate([input_accom_,input_melody_])
+    x = Dense(melody_feature_length*2, activation='sigmoid')(x)
+    x = Dense(output_shape)(x)
+    prediction = Activation('softmax')(x)
+    model = Model(inputs=[input_melody, input_accom], outputs = prediction)
+    return model
 
 def get_complex_model(input_shape_melody, input_shape_accom,  output_shape):
     note_length = input_shape_melody[1]
@@ -241,4 +284,5 @@ def resnet_v1(input_shape, depth, num_classes=10,input_tensor=None):
     return model
 
 def get_conv1d_resnet(input_shape, output_shape, input_tensor):
-    return resnet_v1(input_shape,num_classes=output_shape, depth=3*6+2, input_tensor=input_tensor)
+    return resnet_v1(input_shape, num_classes=output_shape, depth=1 * 6 + 2, input_tensor=input_tensor)
+    # return resnet_v1(input_shape,num_classes=output_shape, depth=3*6+2, input_tensor=input_tensor)

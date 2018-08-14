@@ -8,7 +8,7 @@ batch_size = 64
 epochs = 100  
 latent_dim = 256 
 num_samples = 10000  
-data_path = 'Bach.txt'
+data_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/TextMelody/Bach/Bach_train.txt'
 
 
 
