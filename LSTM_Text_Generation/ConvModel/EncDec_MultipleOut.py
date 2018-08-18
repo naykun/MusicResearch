@@ -27,12 +27,13 @@ import io
 import os
 import shutil
 from ConvModel import *
+from ConvResModel import *
 
 if(len(sys.argv)!=1):
     maxlen = int(sys.argv[2])
     how_much_part = int(sys.argv[3])
 else:
-    maxlen = 50
+    maxlen = 16*4
     how_much_part = 10
 
 epochs = 50
@@ -113,11 +114,11 @@ for i, sentence in enumerate(sentences):
         x[i, t, char_indices[char]] = 1
     y[i, char_indices[next_chars[i]]] = 1
 
-x = np.split(x, melody_len)
-y = np.split(y, melody_len)
+# x = np.split(x, melody_len)
+# y = np.split(y, melody_len)
 print('x shape ', x.shape)
 print('y shape ', y.shape)
-import ipdb; ipdb.set_trace()
+# import ipdb; ipdb.set_trace()
 # melody_len = 4
 # len = len(x)
 # melody = []
@@ -126,7 +127,7 @@ import ipdb; ipdb.set_trace()
 #     melody.extend(x[i:i+melody_len].flatten())
 #     accom.extend(y[i:i+melody_len].flatten())
 
-import ipdb; ipdb.set_trace()
+# import ipdb; ipdb.set_trace()
 
 print('x shape ', x.shape)
 print('y shape ', y.shape)
@@ -137,8 +138,9 @@ train_input_shape = (x.shape[1], x.shape[2])
 train_output_shape = (y.shape[1])
 
 # model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
-model = get_conv1d_model_old(input_shape=train_input_shape,output_shape = train_output_shape)
+# model = get_conv1d_model_old(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_two_pipeline_model(input_shape=train_input_shape,output_shape = train_output_shape)
+model = resnet_v1 (input_shape=train_input_shape,output_shape = train_output_shape)
 
 # model = get_naive_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_model_simple(input_shape=train_input_shape,output_shape = train_output_shape)

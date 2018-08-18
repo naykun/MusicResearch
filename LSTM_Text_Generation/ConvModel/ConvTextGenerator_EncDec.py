@@ -27,12 +27,13 @@ import io
 import os
 import shutil
 from ConvModel import *
+from ConvResModel import *
 
 if(len(sys.argv)!=1):
     maxlen = int(sys.argv[2])
     how_much_part = int(sys.argv[3])
 else:
-    maxlen = 50
+    maxlen = 64
     how_much_part = 10
 
 epochs = 50
@@ -40,7 +41,7 @@ batch_size = 1024
 
 def lr_schedule(epoch):
     #Learning Rate Schedule
-    lr = 1e-2
+    lr = 1e-3
     if epoch >= epochs * 0.9:
         lr *= 0.5e-3
     elif epoch >= epochs * 0.8:
@@ -52,9 +53,9 @@ def lr_schedule(epoch):
     print('Learning rate: ', lr)
     return lr
 
-exp_name = 'Debug_WinSize%d_BS%d_%dpart_epoch%d' % (maxlen, batch_size, how_much_part, epochs)
+exp_name = 'ResNetV2_WinSize%d_BS%d_%dpart_epoch%d' % (maxlen, batch_size, how_much_part, epochs)
 log = '../res/' + exp_name + '.txt'
-tb_log = '../TB_logdir/CNN/' + exp_name
+tb_log = '../TB_logdir/ResNet/' + exp_name
 max_acc_log = '../res/max_acc.txt'
 model_log_dir = '../Models/' + exp_name
 initial_epoch = 0
@@ -109,17 +110,19 @@ print('Build model...')
 train_input_shape = (maxlen, len(chars))
 train_output_shape = (len(chars))
 
+#Finished model, recommend to choose get_conv1d_model or resnet_v1_MoreLocal model to run:
 model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_model_old(input_shape=train_input_shape,output_shape = train_output_shape)
-# model = get_two_pipeline_model(input_shape=train_input_shape,output_shape = train_output_shape)
-
 # model = get_naive_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
-# model = get_conv1d_model_simple(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_resNet_model(input_shape=train_input_shape,output_shape = train_output_shape)
-
-# model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
+# model = resnet_v1_MoreLocal(input_shape=train_input_shape, output_shape = train_output_shape)
 # model = get_conv1d_resnet(input_shape=train_input_shape,output_shape = train_output_shape)
+# model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_complex_model(input_shape_melody=train_input_shape, input_shape_accom=train_input_shape,  output_shape=train_output_shape)
+
+#TODO
+# model = resnet_v1_simple(input_shape=train_input_shape, output_shape = train_output_shape)
+# model = get_two_pipeline_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_complex_model_resNet_melody(input_shape_melody=train_input_shape, input_shape_accom=train_input_shape,  output_shape=train_output_shape)
 
 model.summary()

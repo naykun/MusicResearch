@@ -45,15 +45,15 @@ from ConvModel import *
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_integer('batch_size', 1024, 'LSTM Layer Units Number')
-tf.app.flags.DEFINE_integer('epochs', 50, 'Total epochs')
+tf.app.flags.DEFINE_integer('epochs', 200, 'Total epochs')
 tf.app.flags.DEFINE_integer('maxlen', 64, 'Max length of a sentence')
 tf.app.flags.DEFINE_integer('generate_length', 400, 'Number of steps of generated music')
-tf.app.flags.DEFINE_integer('units', 128, 'LSTM Layer Units Number')
+tf.app.flags.DEFINE_integer('units', 512, 'LSTM Layer Units Number')
 tf.app.flags.DEFINE_integer('dense_size', 0, 'Dense Layer Size')
 tf.app.flags.DEFINE_integer('step', 1, 'Step length when building dataset')
 tf.app.flags.DEFINE_integer('embedding_length', 1, 'Embedding length')
-tf.app.flags.DEFINE_string('dataset_name', 'Bach', 'Dataset name will be the prefix of exp_name')
-tf.app.flags.DEFINE_string('dataset_dir', '/home/ouyangzhihao/sss/Mag/Mag_Data/TextMelody/Bach/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
+tf.app.flags.DEFINE_string('dataset_name', 'Wikifonia', 'Dataset name will be the prefix of exp_name')
+tf.app.flags.DEFINE_string('dataset_dir', '/home/ouyangzhihao/sss/Mag/Mag_Data/TextMelody/Wikifonia/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
 
 # In[2]:
 
@@ -74,7 +74,7 @@ dataset_dir = FLAGS.dataset_dir
 
 date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
 
-exp_name = "LocalConv%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
+exp_name = "NorepeatData_fresNet%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
                                                                         batch_size, epochs, units, dense_size, maxlen, step,
                                                                         embedding_length, date_and_time)
 
@@ -190,23 +190,6 @@ def print_fn(str):
     with open(console_log_file, 'a+') as f:
         print(str, file=f)
 
-# def lr_schedule(epoch):
-#     # Learning Rate Schedule
-#
-#     lr = 1e-1
-#     if epoch >= epochs * 0.9:
-#         lr *= 0.5e-3
-#     elif epoch >= epochs * 0.8:
-#         lr *= 1e-3
-#     elif epoch >= epochs * 0.6:
-#         lr *= 1e-2
-#     elif epoch >= epochs * 0.4:
-#         lr *= 1e-1
-#     print_fn('Learning rate: %f' % lr)
-#
-#     lr = 1e-3
-#     return lr
-
 def lr_schedule(epoch):
     #Learning Rate Schedule
     lr = 1e-2
@@ -248,7 +231,9 @@ print('train_input_shape', train_input_shape)
 print('train_output_shape', train_output_shape)
 print('x_train.shape', x_train.shape)
 print('y_train.shape', y_train.shape)
-model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
+# model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
+# model = get_conv1d_model_old(input_shape=train_input_shape,output_shape = train_output_shape)
+model = get_resNet_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_resnet(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_complex_model(input_shape_melody=train_input_shape, input_shape_accom=train_input_shape,  output_shape=train_output_shape)
