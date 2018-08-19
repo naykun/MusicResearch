@@ -44,12 +44,22 @@ from my_to_midi import *
 
 
 FLAGS = tf.app.flags.FLAGS
+<<<<<<< HEAD
 tf.app.flags.DEFINE_string('dataset_name', 'Bach', 'Dataset name will be the prefix of exp_name')
 tf.app.flags.DEFINE_string('dataset_dir', 'datasets/Bach/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
 tf.app.flags.DEFINE_integer('model_epoch', 20, 'To define which model to load')
 tf.app.flags.DEFINE_string('model_dir', '', 'Model h5 directory')
 tf.app.flags.DEFINE_string('exp_name', '', 'Experiment name')
 tf.app.flags.DEFINE_integer('generate_length', 400, 'Number of steps of generated music')
+=======
+tf.app.flags.DEFINE_string('dataset_name', 'Wikifonia', 'Dataset name will be the prefix of exp_name')
+tf.app.flags.DEFINE_string('dataset_dir', '/home/ouyangzhihao/sss/Mag/Mag_Data/TextMelody/Wikifonia/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
+tf.app.flags.DEFINE_integer('model_epoch', 150, 'To define which model to load')
+tf.app.flags.DEFINE_string('model_dir',
+                           '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/MusicResearch/Music_Text_Generation/Model_logdir/', 'Model h5 directory')
+tf.app.flags.DEFINE_string('exp_name', 'ResNet_8_16_firstConvWikifonia_batchS1024_epochs150_maxL64_2018-08-16_101617', 'Experiment name')
+tf.app.flags.DEFINE_integer('generate_length', 1200, 'Number of steps of generated music')
+>>>>>>> ab5f21f43c7e87fa9f0337b9bd9a8f4794d76fdb
 tf.app.flags.DEFINE_integer('generate_num', 1, 'Number of steps of generated music')
 
 
@@ -64,6 +74,7 @@ exp_name = FLAGS.exp_name
 model_epoch = FLAGS.model_epoch
 model_path = os.path.join(FLAGS.model_dir, exp_name, 'epoch%d.h5' % model_epoch)
 
+<<<<<<< HEAD
 exp_pat = r"([a-zA-Z]*)_batchS(\d*)_epochs(\d*)_units(\d*)_denseS(\d*)_maxL(\d*)_step(\d*)_embeddingL(\d*)_(.*)"
 exp_mat = re.match(exp_pat, exp_name)
 exp_pat2 = r"([a-zA-Z]*)_batchS(\d*)_epochs(\d*)_units(\d*)_maxL(\d*)_step(\d*)_embeddingL(\d*)_(.*)"
@@ -91,6 +102,37 @@ else:
     print("No match!")
 
 
+=======
+# # exp_pat = r"([a-zA-Z]*)_batchS(\d*)_epochs(\d*)_units(\d*)_denseS(\d*)_maxL(\d*)_step(\d*)_embeddingL(\d*)_(.*)"
+# exp_pat = r"(*_maxL(\d*)_step(\d*)_embeddingL(\d*)_(.*)"
+# exp_mat = re.match(exp_pat, exp_name)
+# exp_pat2 = r"([a-zA-Z]*)_batchS(\d*)_epochs(\d*)_units(\d*)_maxL(\d*)_step(\d*)_embeddingL(\d*)_(.*)"
+# exp_mat2 = re.match(exp_pat2, exp_name)
+#
+# if exp_mat:
+#     # batch_size = int(exp_mat.group(2))
+#     # epochs = int(exp_mat.group(3))
+#     # units = int(exp_mat.group(4))
+#     # dense_size = int(exp_mat.group(5))
+#     maxlen = int(exp_mat.group(0))
+#     # step = int(exp_mat.group(7))
+#     # embedding_length = int(exp_mat.group(8))
+#     date_and_time = exp_mat.group(9)
+# elif exp_mat2:
+#     exp_mat = re.match(exp_pat2, exp_name)
+#     batch_size = int(exp_mat.group(2))
+#     epochs = int(exp_mat.group(3))
+#     units = int(exp_mat.group(4))
+#     maxlen = int(exp_mat.group(5))
+#     step = int(exp_mat.group(6))
+#     embedding_length = int(exp_mat.group(7))
+#     date_and_time = exp_mat.group(8)
+# else:
+#     print("No match!")
+
+maxlen = 64
+embedding_length = 1
+>>>>>>> ab5f21f43c7e87fa9f0337b9bd9a8f4794d76fdb
 # In[6]:
 generate_log_dir = os.path.join("Generate_logdir/", exp_name)
 midi_log_dir = os.path.join(generate_log_dir, "midi")
@@ -326,17 +368,30 @@ for i in range(FLAGS.generate_num):
     generate(model_epoch)
 
 '''
+<<<<<<< HEAD
 
+=======
+#generate_from_model_snapshot
+>>>>>>> ab5f21f43c7e87fa9f0337b9bd9a8f4794d76fdb
 
 rlaunch --cpu=4 --gpu=1 --memory=8000 bash
 
 
+<<<<<<< HEAD
 python3 generate_from_model_snapshot.py --dataset_name=Bach \
 --dataset_dir=datasets/Bach \
 --model_epoch=200 \
 --model_dir=Model_logdir \
 --exp_name=Bach_batchS1024_epochs200_units512_maxL32_step1_embeddingL8_2018-07-30_102638 \
 --generate_length=400 \
+=======
+python3 g.py --dataset_name=Bach \
+--dataset_dir=/home/ouyangzhihao/sss/Mag/Mag_Data/TextMelody/Bach/ \
+--model_epoch=150 \
+--model_dir=Model_logdir \
+--exp_name=ResNet_8_16_firstConvWikifonia_batchS1024_epochs150_maxL64_2018-08-16_101617 \
+--generate_length=1200 \
+>>>>>>> ab5f21f43c7e87fa9f0337b9bd9a8f4794d76fdb
 --generate_num=2
 
 

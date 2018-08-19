@@ -36,7 +36,7 @@ else:
     how_much_part = 10
 
 epochs = 100
-batch_size = 1024
+batch_size = 512
 # def lr_schedule(epoch):
 #     #Learning Rate Schedule
 #     lr = 1e-1
@@ -67,7 +67,7 @@ def lr_schedule(epoch):
     print('Learning rate: ', lr)
     return lr
 
-exp_name = 'ComplexResnetMelodyNoL2_WinSize%d_BS%d_%dpart_epoch%d' % (maxlen, batch_size, how_much_part, epochs)
+exp_name = 'CResX1LocalAccom_WinSize%d_BS%d_%dpart_epoch%d' % (maxlen, batch_size, how_much_part, epochs)
 log = '../res/' + exp_name + '.txt'
 tb_log = '../TB_logdir/LSTM/WinSize_DenseEmbedding/' + exp_name
 max_acc_log = '../res/max_acc.txt'
