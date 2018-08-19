@@ -173,6 +173,16 @@ class PolyphonyRnnSequenceGenerator(mm.BaseSequenceGenerator):
           len(poly_seq) + rnn_steps_to_gen, poly_seq, **args)
     poly_seq.set_length(total_steps)
 
+    '''
+    poly_seq.set_length(0)
+
+    a=[0,60,62,2,60,65,2,60,62,2,60,61,62,63,64,65,2,1]
+
+    b = PolyphonicEvent()
+    for i in a:
+        poly_seq.append(i)
+    '''
+
     if generator_options.args['condition_on_primer'].bool_value:
       generated_sequence = poly_seq.to_sequence(qpm=qpm)
     else:
