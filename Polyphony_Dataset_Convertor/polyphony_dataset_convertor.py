@@ -119,6 +119,8 @@ def list_to_midi(events, qpm, output_dir, midi_name):
     print('Wrote %s.mid to %s'%(midi_name, output_dir) )
 
 
+
+'''
 # how to use
 
 # midi to polyphony sequence
@@ -148,3 +150,4 @@ with open(test_list_path, 'rb') as tl_file:
 for i in range(10):
     list_to_midi(test_list[i], 120, '/Users/mac/Desktop/test', 'test_pkl_to_midi%d'%i)
 
+'''

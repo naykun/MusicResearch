@@ -179,8 +179,9 @@ class PolyphonicSequence(events_lib.EventSequence):
     Raises:
       ValueError: If `event` is not a valid polyphonic event.
     """
-    if not isinstance(event, PolyphonicEvent):
-      raise ValueError('Invalid polyphonic event: %s' % event)
+    # Modified by Someday
+    # if not isinstance(event, PolyphonicEvent):
+      # raise ValueError('Invalid polyphonic event: %s' % event)
     self._events.append(event)
 
   def __len__(self):
