@@ -46,7 +46,8 @@ from my_to_midi import *
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('dataset_name', 'Bach', 'Dataset name will be the prefix of exp_name')
 tf.app.flags.DEFINE_string('dataset_dir', '/home/ouyangzhihao/sss/Mag/Mag_Data/TextMelody/Bach/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
-tf.app.flags.DEFINE_integer('model_epoch', 150, 'To define which model to load')
+tf.app.flags.DEFINE_string('dataset_name', 'Wikifonia', 'Dataset name will be the prefix of exp_name')
+tf.app.flags.DEFINE_string('dataset_dir', '/home/ouyangzhihao/sss/Mag/Mag_Data/TextMelody/Wikifonia/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
 tf.app.flags.DEFINE_string('model_dir',
                            '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/MusicResearch/Music_Text_Generation/Model_logdir/', 'Model h5 directory')
 tf.app.flags.DEFINE_string('exp_name', 'ResNet_8_16_firstConvWikifonia_batchS1024_epochs150_maxL64_2018-08-16_101617', 'Experiment name')
@@ -329,10 +330,17 @@ for i in range(FLAGS.generate_num):
     generate(model_epoch)
 
 '''
-#generate_from_model_snapshot
+generate_from_model_snapshot
 
 rlaunch --cpu=4 --gpu=1 --memory=8000 bash
 
+
+python3 generate_from_model_snapshot.py --dataset_name=Bach \
+--dataset_dir=datasets/Bach \
+--model_epoch=200 \
+--model_dir=Model_logdir \
+--exp_name=Bach_batchS1024_epochs200_units512_maxL32_step1_embeddingL8_2018-07-30_102638 \
+--generate_length=400 \
 
 python3 g.py --dataset_name=Bach \
 --dataset_dir=/home/ouyangzhihao/sss/Mag/Mag_Data/TextMelody/Bach/ \

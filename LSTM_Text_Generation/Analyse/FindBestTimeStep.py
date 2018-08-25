@@ -21,12 +21,17 @@ import shutil
 # infor_length = int(sys.argv[1])
 
 #infor_length is critical
-def get_text_train_data(time_step = 10, infor_length = 15, how_much_part = 10):
-
+def get_text_train_data(time_step = 10, infor_length = 15, how_much_part = 1):
+    '''
     path = get_file('nietzsche.txt', origin='https://s3.amazonaws.com/text-datasets/nietzsche.txt')
     with io.open(path, encoding='utf-8') as f:
         text = f.read().lower()
     print('corpus length:', len(text))
+    '''
+
+    text = open("/Users/mac/Desktop/MusicGeneration/TextGeneration/nietzsche.txt",'r')
+    text = text.read()
+    print(len(text))
 
     text = text[:int(len(text) / how_much_part)]
     print('truncated corpus length:', len(text))
@@ -113,5 +118,5 @@ def run(length):
     # num / Acc
     print('%d \t %f' % (length, acc), file=open(max_acc_log, 'a'))
 
-for i in range(1,41):
+for i in range(1,51):
     run(i)

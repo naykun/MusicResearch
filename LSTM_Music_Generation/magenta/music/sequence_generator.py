@@ -61,9 +61,12 @@ class BaseSequenceGenerator(object):
     """
     self._model = model
     self._details = details
+
+
     self._checkpoint = checkpoint
     self._bundle = bundle
 
+    '''
     if self._checkpoint is None and self._bundle is None:
       raise SequenceGeneratorException(
           'Either checkpoint or bundle must be set')
@@ -77,6 +80,8 @@ class BaseSequenceGenerator(object):
             'Generator id in bundle (%s) does not match this generator\'s id '
             '(%s)' % (self._bundle.generator_details.id,
                       self._details.id))
+  
+    '''
 
     self._initialized = False
 
@@ -135,6 +140,7 @@ class BaseSequenceGenerator(object):
     if self._initialized:
       return
 
+    '''
     # Either self._checkpoint or self._bundle should be set.
     # This is enforced by the constructor.
     if self._checkpoint is not None:
@@ -175,6 +181,9 @@ class BaseSequenceGenerator(object):
         # Clean up the temp dir.
         if tempdir is not None:
           tf.gfile.DeleteRecursively(tempdir)
+                
+    '''
+
     self._initialized = True
 
   def close(self):

@@ -6,6 +6,7 @@ TB_log
 # Ignore TF Moduel file
 *.pkl
 *.h5
+*.mag
 
 Music_Text_Generation/*logdir
 

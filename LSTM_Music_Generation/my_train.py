@@ -20,6 +20,60 @@ from sequence_example_lib import *
 import os
 
 
+def one_hot(x):
+    x = K.argmax(x)
+    x = tf.one_hot(x, 38) 
+    x = RepeatVector(1)(x)
+    return x
+
+def get_train_model_unroll(FLAGS):
+
+    layer_size = FLAGS.layer_size
+    notes_range = FLAGS.notes_range
+    embedding_len = FLAGS.embedding_len
+    maxlen = FLAGS.maxlen
+
+    concator = keras.layers.Concatenate(axis=1)
+    reshapor = Reshape((1,notes_range*embedding_len))
+    LSTM_cell = LSTM(layer_size, return_state = True)
+    masker = keras.layers.Masking(mask_value=0)
+    # tddensor = TimeDistributed(Dense(notes_range, activation='softmax'))
+    densor = Dense(notes_range, activation='softmax')
+    X = Input(shape=(maxlen-embedding_len,notes_range*embedding_len))
+    X = masker(X)
+    a0 = Input(shape=(layer_size,),name='a0') #LSTM acitvation value
+    c0 = Input(shape=(layer_size,),name='c0') #LSTM cell value
+    # a0 = np.zeros((m,layer_size))
+    # c0 = np.zeros((m,layer_size))
+    outreshapor = Reshape((1,notes_range))
+    a = a0
+    c = c0
+
+    # lstm = LSTM_cell(X)
+    # outputs = tddensor(lstm)
+    outputs =[] 
+
+    for t in range(maxlen-embedding_len):
+        with tf.name_scope('Slice'):
+            x = Lambda(lambda x: x[:,t,:])(X)
+        with tf.name_scope('Reshape'):
+            x = reshapor(x)
+        with tf.name_scope('LSTM'):
+            if t==0:
+                a, _, c = LSTM_cell(x,initial_state=[a0,c0])
+            else:
+                a, _, c = LSTM_cell(x,initial_state=[a,c])
+        with tf.name_scope('Dense'):
+            out = densor(a)
+        if t==0:
+            outputs=outreshapor(out)
+        else:
+            outputs = concator([outputs,outreshapor(out)])
+    # logits_flat = flatten_maybe_padded_sequences(outputs, lengths
+    # import ipdb; ipdb.set_trace()
+    model = Model(inputs=[X,a0,c0],outputs=outputs)
+    return model,LSTM_cell,reshapor,densor
+
 def get_train_model(FLAGS):
 
     layer_size = FLAGS.layer_size
@@ -28,9 +82,10 @@ def get_train_model(FLAGS):
     maxlen = FLAGS.maxlen
 
     reshapor = Reshape((1,notes_range*embedding_len))
-    LSTM_cell = LSTM(layer_size, return_state = True)
-    # tddensor = TimeDistributed(Dense(notes_range, activation='softmax'))
+    masker = keras.layers.Masking(mask_value=0)
+    LSTM_cell = LSTM(layer_size,return_state=True, return_sequences = True)
     densor = Dense(notes_range, activation='softmax')
+    tddensor = TimeDistributed(densor)
     X = Input(shape=(maxlen-embedding_len,notes_range*embedding_len))
 
     a0 = Input(shape=(layer_size,),name='a0') #LSTM acitvation value
@@ -41,21 +96,11 @@ def get_train_model(FLAGS):
     a = a0
     c = c0
 
-    # lstm = LSTM_cell(X)
-    # outputs = tddensor(lstm)
-    outputs = []
 
-    for t in range(maxlen-embedding_len):
-        x = Lambda(lambda x: x[:,t,:])(X)
-        x = reshapor(x)
-        if t==0:
-            a, _, c = LSTM_cell(x,initial_state=[a0,c0])
-        else:
-            a, _, c = LSTM_cell(x,initial_state=[a,c])
-        out = densor(a)
-        outputs.append(out)
-    # logits_flat = flatten_maybe_padded_sequences(outputs, lengths
-    # import ipdb; ipdb.set_trace()
+    X_masked = masker(X)
+    lstm,_,_ = LSTM_cell(X_masked,initial_state=[a,c])
+    outputs = tddensor(lstm)
+    
     model = Model(inputs=[X,a0,c0],outputs=outputs)
     return model,LSTM_cell,reshapor,densor
 
@@ -79,6 +124,7 @@ def lr_schedule(epoch):
 
     lr = 1e-3
     return lr
+
 def dataset_embedding(X,labels,maxlen,embedding_len):
     X_embedded = []
     for i in range(maxlen - embedding_len ):
@@ -110,8 +156,11 @@ def train(FLAGS):
     X_val, labels_val, _ = get_numpy_from_tf_sequence_example(input_size=38,
                                     sequence_example_file_paths = val_sequence_example_file_paths,
                                     shuffle = False)
+
+
     X_train,labels_train = dataset_embedding(X_train, labels_train, maxlen, embedding_len)
     X_val,labels_val = dataset_embedding(X_val, labels_val, maxlen, embedding_len)
+
 
 
     model,LSTM_cell,reshapor,densor = get_train_model(FLAGS)
@@ -150,8 +199,8 @@ def train(FLAGS):
     tb_callbacks = TensorBoard(log_dir = tb_log_file)
     # Y_train.split(maxlen-embedding_len,axis=1)
     lr_scheduler = LearningRateScheduler(lr_schedule)
-    Y_train = [np.squeeze(x) for x in np.split(Y_train,Y_train.shape[1],axis=1)]
-    Y_val = [np.squeeze(x) for x in np.split(Y_val,Y_val.shape[1],axis=1)]
+    # Y_train = [np.squeeze(x) for x in np.split(Y_train,Y_train.shape[1],axis=1)]
+    # Y_val = [np.squeeze(x) for x in np.split(Y_val,Y_val.shape[1],axis=1)]
     history_callback = model.fit([X_train, a0_train, c0_train], Y_train,batch_size=batch_size,
                 epochs=epochs,
                 callbacks=[tb_callbacks, lr_scheduler],validation_data=([X_val, a0_val, c0_val],Y_val))
@@ -182,7 +231,7 @@ def train(FLAGS):
     
     return LSTM_cell,reshapor,densor
 
-def get_inference_model(FLAGS,LSTM_cell, reshapor, densor):
+def get_inference_model(FLAGS, LSTM_cell, reshapor, densor):
     
     notes_range = FLAGS.notes_range
     embedding_len = FLAGS.embedding_len 
@@ -205,6 +254,7 @@ def get_inference_model(FLAGS,LSTM_cell, reshapor, densor):
 
     slicer = Lambda(lambda x:x[:,:,notes_range:])
     concator = keras.layers.Concatenate(axis=-1)
+    out_reshapor = Reshape((1,notes_range))
     # Define the input of your model with a shape 
     x0 = Input(shape=(embedding_len, notes_range))
     
@@ -213,7 +263,8 @@ def get_inference_model(FLAGS,LSTM_cell, reshapor, densor):
     c0 = Input(shape=(layer_size,), name='c0')
     a = a0
     c = c0
-
+    # state_slicer = Lambda(lambda x:K.squeeze(x[:,0,:],axis = 1))
+    # state_reshapor = Reshape((1,))
     x = reshapor(x0)
 
     ### START CODE HERE ###
@@ -224,19 +275,23 @@ def get_inference_model(FLAGS,LSTM_cell, reshapor, densor):
     for t in range(Ty):
         
         # Step 2.A: Perform one step of LSTM_cell (≈1 line)
-        a, _, c = LSTM_cell(x,initial_state=[a,c])
-        
+        _, a, c = LSTM_cell(x,initial_state=[a,c])
+        # print("a shape:",a.shape)
         # Step 2.B: Apply Dense layer to the hidden state output of the LSTM_cell (≈1 line)
         out = densor(a)
-        out = reshapor(out)
         # Step 2.C: Append the prediction "out" to "outputs". out.shape = (None, 78) (≈1 line)
         outputs.append(out)
         
         # Step 2.D: Select the next value according to "out", and set "x" to be the one-hot representation of the
         #           selected value, which will be passed as the input to LSTM_cell on the next step. We have provided 
         #           the line of code you need to do this. 
+        out = Lambda(one_hot)(out)
+        out = out_reshapor(out)
         x = slicer(x)
         x = concator([x,out])
+
+        # a = state_slicer(a)
+        # c = state_slicer(c)
     # Step 3: Create model instance with the correct "inputs" and "outputs" (≈1 line)
     inference_model = Model(inputs=[x0,a0,c0],outputs=outputs)
     
