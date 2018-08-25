@@ -27,21 +27,20 @@ import io
 import os
 import shutil
 from ConvModel import *
-from ConvResModel import *
 
 if(len(sys.argv)!=1):
     maxlen = int(sys.argv[2])
     how_much_part = int(sys.argv[3])
 else:
-    maxlen = 16*4
+    maxlen = 128
     how_much_part = 10
 
-epochs = 50
-batch_size = 1024
+epochs = 100
+batch_size = 512
 
 def lr_schedule(epoch):
     #Learning Rate Schedule
-    lr = 1e-2
+    lr = 1e-3
     if epoch >= epochs * 0.9:
         lr *= 0.5e-3
     elif epoch >= epochs * 0.8:
@@ -53,7 +52,7 @@ def lr_schedule(epoch):
     print('Learning rate: ', lr)
     return lr
 
-exp_name = 'Debug_WinSize%d_BS%d_%dpart_epoch%d' % (maxlen, batch_size, how_much_part, epochs)
+exp_name = 'DebugResNetMult_WinSize%d_BS%d_%dpart_epoch%d' % (maxlen, batch_size, how_much_part, epochs)
 log = '../res/' + exp_name + '.txt'
 tb_log = '../TB_logdir/CNN/' + exp_name
 max_acc_log = '../res/max_acc.txt'
@@ -95,18 +94,6 @@ for i in range(0, len(text) - maxlen, step):
 print('nb sequences:', len(sentences))
 
 print('Vectorization...')
-# import ipdb; ipdb.set_trace()
-
-# x = np.zeros((len(sentences), maxlen, 1), dtype=np.float)
-# y = np.zeros((len(sentences), len(chars)), dtype=np.float)
-# for i, sentence in enumerate(sentences):
-#     for t, char in enumerate(sentence):
-#         x[i, t, 0] = char_indices[char]
-#     y[i, char_indices[next_chars[i]]] = 1
-
-# import ipdb; ipdb.set_trace()
-
-melody_len = 4
 x = np.zeros((len(sentences), maxlen, len(chars)), dtype=np.bool)
 y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
 for i, sentence in enumerate(sentences):
@@ -114,37 +101,31 @@ for i, sentence in enumerate(sentences):
         x[i, t, char_indices[char]] = 1
     y[i, char_indices[next_chars[i]]] = 1
 
-# x = np.split(x, melody_len)
-# y = np.split(y, melody_len)
+n_outputs = 4
+yy = []
+for i in range(0,len(y)-n_outputs):
+    yy.append(y[i:i+n_outputs].flatten())
+y = np.array(yy)
+x = x[0:len(y)]
 print('x shape ', x.shape)
-print('y shape ', y.shape)
-# import ipdb; ipdb.set_trace()
-# melody_len = 4
-# len = len(x)
-# melody = []
-# accom = []
-# for i in range(0,len,melody_len):
-#     melody.extend(x[i:i+melody_len].flatten())
-#     accom.extend(y[i:i+melody_len].flatten())
-
-# import ipdb; ipdb.set_trace()
-
-print('x shape ', x.shape)
-print('y shape ', y.shape)
+print('y shape ',y.shape)
 
 # build the model:  LSTM
 print('Build model...')
 train_input_shape = (x.shape[1], x.shape[2])
 train_output_shape = (y.shape[1])
-
+# exit()
 # model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_model_old(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_two_pipeline_model(input_shape=train_input_shape,output_shape = train_output_shape)
-model = resnet_v1 (input_shape=train_input_shape,output_shape = train_output_shape)
 
 # model = get_naive_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_model_simple(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_resNet_model(input_shape=train_input_shape,output_shape = train_output_shape)
+# model = get_conv1d_model_multiple_out(input_shape=train_input_shape,output_shape = train_output_shape, output_n = n_outputs)
+model = get_resNet_model_multiple_out(input_shape=train_input_shape,output_shape = train_output_shape, output_n = n_outputs)
+
+
 
 # model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_resnet(input_shape=train_input_shape,output_shape = train_output_shape)
@@ -184,7 +165,7 @@ def print_func(str = '\n'):
     print(str, file=open(log, 'a'))
 
 def on_epoch_end(epoch, logs):
-    return
+    # return
     if(epoch%10 == 0):
         shutil.rmtree(model_log_dir)
         os.mkdir(model_log_dir)
@@ -195,7 +176,7 @@ def on_epoch_end(epoch, logs):
         print_func()
         print_func('----- Generating text after Epoch: %d' % epoch)
 
-        start_index = random.randint(0, len(text) - maxlen - 1)
+        start_index = random.randint(0, len(text) - maxlen - 1 - n_outputs)
         for diversity in [0.2, 0.5, 1.0, 1.2]:
             print_func('----- diversity:' + str(diversity))
 
@@ -211,12 +192,16 @@ def on_epoch_end(epoch, logs):
                 for t, char in enumerate(sentence):
                     x_pred[0, t, char_indices[char]] = 1.
 
-                preds = model.predict(x_pred, verbose=0)[0]
-                next_index = sample(preds, diversity)
-                next_char = indices_char[next_index]
-
-                generated += next_char
-                sentence = sentence[1:] + next_char
+                preds_all = model.predict(x_pred, verbose=0)[0]
+                # print('shape of result:', preds_all.shape)
+                # import ipdb; ipdb.set_trace()
+                for k in range(n_outputs):
+                    unit_len_of_label = len(chars)
+                    preds = preds_all[k*unit_len_of_label : (k+1)*unit_len_of_label]
+                    next_index = sample(preds, diversity)
+                    next_char = indices_char[next_index]
+                    generated += next_char
+                    sentence = sentence[1:] + next_char
 
                 sys.stdout.write(next_char)
                 sys.stdout.flush()

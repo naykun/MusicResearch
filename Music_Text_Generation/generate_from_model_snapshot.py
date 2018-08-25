@@ -44,13 +44,13 @@ from my_to_midi import *
 
 
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_string('dataset_name', 'Wikifonia', 'Dataset name will be the prefix of exp_name')
-tf.app.flags.DEFINE_string('dataset_dir', '/home/ouyangzhihao/sss/Mag/Mag_Data/TextMelody/Wikifonia/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
+tf.app.flags.DEFINE_string('dataset_name', 'Bach', 'Dataset name will be the prefix of exp_name')
+tf.app.flags.DEFINE_string('dataset_dir', '/home/ouyangzhihao/sss/Mag/Mag_Data/TextMelody/Bach/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
 tf.app.flags.DEFINE_integer('model_epoch', 150, 'To define which model to load')
 tf.app.flags.DEFINE_string('model_dir',
                            '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/MusicResearch/Music_Text_Generation/Model_logdir/', 'Model h5 directory')
 tf.app.flags.DEFINE_string('exp_name', 'ResNet_8_16_firstConvWikifonia_batchS1024_epochs150_maxL64_2018-08-16_101617', 'Experiment name')
-tf.app.flags.DEFINE_integer('generate_length', 1200, 'Number of steps of generated music')
+tf.app.flags.DEFINE_integer('generate_length', 3200, 'Number of steps of generated music')
 tf.app.flags.DEFINE_integer('generate_num', 1, 'Number of steps of generated music')
 
 

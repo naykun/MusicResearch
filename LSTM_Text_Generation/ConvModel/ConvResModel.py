@@ -31,17 +31,17 @@ def resnet_v1_MoreLocal(input_shape, output_shape, depth=3 * 6 + 2):
     num_res_blocks = int((depth - 2) / 6)
 
     inputs = Input(shape=input_shape)
-    x = resnet_layer(inputs=inputs)
+    x = resnet_layer_naive(inputs=inputs)
     # Instantiate the stack of residual units
     for stack in range(3):
         for res_block in range(num_res_blocks):
             strides = 1
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 strides = 2  # downsample
-            y = resnet_layer(inputs=x,
+            y = resnet_layer_naive(inputs=x,
                              num_filters=num_filters,
                              strides=strides)
-            y = resnet_layer(inputs=y,
+            y = resnet_layer_naive(inputs=y,
                              num_filters=num_filters,
                              activation=None)
             if stack > 0 and res_block == 0:  # first layer but not first stack
@@ -110,17 +110,17 @@ def resnet_v1_simple(input_shape, output_shape, depth=3 * 6 + 2):
     num_res_blocks = int((depth - 2) / 6)
 
     inputs = Input(shape=input_shape)
-    x = resnet_layer(inputs=inputs)
+    x = resnet_layer_naive(inputs=inputs)
     # Instantiate the stack of residual units
     for stack in range(3):
         for res_block in range(num_res_blocks):
             strides = 1
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 strides = 2  # downsample
-            y = resnet_layer(inputs=x,
+            y = resnet_layer_naive(inputs=x,
                              num_filters=num_filters,
                              strides=strides)
-            y = resnet_layer(inputs=y,
+            y = resnet_layer_naive(inputs=y,
                              num_filters=num_filters,
                              activation=None)
             if stack > 0 and res_block == 0:  # first layer but not first stack
@@ -162,7 +162,7 @@ def get_resNet_model(input_shape, output_shape):
         else:
             inputs = input_tensor
 
-        x = resnet_layer(inputs=inputs)
+        x = resnet_layer_naive(inputs=inputs)
         # Instantiate the stack of residual units
         for stack in range(3):
             for res_block in range(num_res_blocks):
@@ -180,7 +180,7 @@ def get_resNet_model(input_shape, output_shape):
                 if stack > 0 and res_block == 0:  # first layer but not first stack
                     # linear projection residual shortcut connection to match
                     # changed dims
-                    x = resnet_layer(inputs=x,
+                    x = resnet_layer_naive(inputs=x,
                                      num_filters=num_filters,
                                      kernel_size=16,
                                      strides=strides,
@@ -212,7 +212,7 @@ def get_resNet_model(input_shape, output_shape):
     model = Model(inputs=inputs, outputs=xxx)
     return model
 
-def resnet_layer(inputs,
+def resnet_layer_naive(inputs,
                  num_filters=16,
                  kernel_size=m_filter_size,
                  strides=1,
@@ -272,7 +272,7 @@ def same_padding_second_dim(x, padding_length, name):
 
 def resnet_layer_local(inputs,
                  num_filters=16,
-                 kernel_size=3,
+                 kernel_size=s_filter_size,
                  strides=1,
                  activation=default_activation,
                  batch_normalization=False,
@@ -301,3 +301,63 @@ def resnet_layer_local(inputs,
         x = same_padding_second_dim(x, padding_length=kernel_size, name = x.name.split('/')[0])(x)
         x = conv(x)
     return x
+
+##TODO
+### Accuracy :22epoch 99%, max acc : 0.9997593572988782,  weights num: 2,336,932
+def resnet_v1_110(input_shape, output_shape, depth=18 * 6 + 2):
+    if (depth - 2) % 6 != 0:
+        raise ValueError('depth should be 6n+2 (eg 20, 32, 44 in [a])')
+    # Start model definition.
+    num_filters = 16
+    num_res_blocks = int((depth - 2) / 6)
+
+    resnet_layer = resnet_layer_naive
+    
+    inputs = Input(shape=input_shape)
+    x = resnet_layer_naive(inputs=inputs)
+    # Instantiate the stack of residual units
+    for stack in range(3):
+        resnet_layer = resnet_layer_naive
+        for res_block in range(num_res_blocks):
+            if(res_block == num_res_blocks - 1):
+                resnet_layer = resnet_layer_local
+            if(stack ==2 and res_block >= num_res_blocks/2):
+                resnet_layer = resnet_layer_local
+            strides = 1
+            if stack > 0 and res_block == 0:  # first layer but not first stack
+                strides = 2  # downsample
+            y = resnet_layer(inputs=x,
+                             num_filters=num_filters,
+                             strides=strides)
+            y = resnet_layer(inputs=y,
+                             num_filters=num_filters,
+                             activation=None)
+            if stack > 0 and res_block == 0:  # first layer but not first stack
+                # linear projection residual shortcut connection to match
+                # changed dims
+                x = resnet_layer(inputs=x,
+                                 num_filters=num_filters,
+                                 kernel_size=16,
+                                 strides=strides,
+                                 activation=None,
+                                 batch_normalization=False)
+            x = keras.layers.add([x, y])
+            x = Activation('relu')(x)
+        num_filters *= 2
+
+    x = resnet_layer_local(inputs=x,
+                                 num_filters=64,
+                                 kernel_size=16,
+                                 strides=1,
+                                 batch_normalization=True)
+    # Add classifier on top.
+    # v1 does not use BN after last shortcut connection-ReLU
+    x = AveragePooling1D(pool_size=8)(x)
+    y = Flatten()(x)
+    outputs = Dense(output_shape,
+                    activation='softmax',
+                    kernel_initializer='he_normal')(y)
+
+    # Instantiate model.
+    model = Model(inputs=inputs, outputs=outputs)
+    return model
