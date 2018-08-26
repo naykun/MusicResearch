@@ -48,16 +48,16 @@ from polyphony_dataset_convertor import *
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_integer('batch_size', 1024, 'LSTM Layer Units Number')
 tf.app.flags.DEFINE_integer('epochs', 100, 'Total epochs')
-tf.app.flags.DEFINE_integer('maxlen', 48, 'Max length of a sentence')
+tf.app.flags.DEFINE_integer('maxlen', 64, 'Max length of a sentence')
 tf.app.flags.DEFINE_integer('generate_length', 400, 'Number of steps of generated music')
 tf.app.flags.DEFINE_integer('units', 512, 'LSTM Layer Units Number')
 tf.app.flags.DEFINE_integer('dense_size', 0, 'Dense Layer Size')
 tf.app.flags.DEFINE_integer('step', 8, 'Step length when building dataset')
 tf.app.flags.DEFINE_integer('embedding_length', 1, 'Embedding length')
 tf.app.flags.DEFINE_string('dataset_name', 'Bach', 'Dataset name will be the prefix of exp_name')
-tf.app.flags.DEFINE_string('dataset_dir', 'datasets/Bach/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
+tf.app.flags.DEFINE_string('dataset_dir', '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
 
-# In[2]:
+# In[2]:~/sss/Mag/Mag_Data
 
 
 batch_size = FLAGS.batch_size
@@ -76,15 +76,15 @@ dataset_dir = FLAGS.dataset_dir
 
 date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
 
-exp_name = "LSTM%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
+exp_name = "%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
                                                                         batch_size, epochs, units, dense_size, maxlen, step,
                                                                         embedding_length, date_and_time)
 
 # In[ ]:
 
 
-train_dataset_path = os.path.join(dataset_dir, dataset_name+'_train.pkl')
-eval_dataset_path = os.path.join(dataset_dir, dataset_name+'_eval.pkl')
+# train_dataset_path = os.path.join(dataset_dir, dataset_name+'_train.pkl')
+# eval_dataset_path = os.path.join(dataset_dir, dataset_name+'_eval.pkl')
 train_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_train.pkl'
 eval_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_eval.pkl'
 
@@ -113,11 +113,15 @@ with open(eval_dataset_path, "rb") as eval_file:
 print('Eval dataset shape:', eval_data.shape)
 
 
-# train_data = train_data[0:10000]
-# eval_data = eval_data[0:2000]
+# import ipdb; ipdb.set_trace()
+# print(train_data[0].shape)
+# print(train_data[0])
+print()
+
+train_data = train_data[0:10000]
+eval_data = eval_data[0:2000]
 
 # In[6]:
-
 log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/8_26_Music'
 log_dir = os.path.join(log_root, "logdir", exp_name)
 TB_log_dir = os.path.join(log_root, 'TB_logdir', exp_name)
@@ -136,15 +140,18 @@ def make_log_dirs(dirs):
 dirs = [log_dir, TB_log_dir, console_log_dir, model_log_dir, data_log_dir, midi_log_dir]
 make_log_dirs(dirs)
 
-max_acc_log_path = os.path.join("logdir/", "max_acc_log.txt")
+max_acc_log_path = os.path.join(log_root, "logdir", "max_acc_log.txt")
 
 
 def get_embedded_data(data, maxlen, embedding_length):
     # cut the data in semi-redundant sequences of maxlen characters
-    # inputs and labels are python strings
 
     inputs = data[:len(data) - 1]
     labels = data[1:len(data)]
+
+    print(np.shape(inputs))
+    print(np.shape(inputs[0]))
+    print((inputs[0]))
 
     inputs = to_categorical(inputs, 259)
     labels = to_categorical(labels, 259)
@@ -167,8 +174,6 @@ def get_embedded_data(data, maxlen, embedding_length):
 
 # In[7]:
 
-
-
 print('Vectorization...')
 x_train, y_train = get_embedded_data(train_data, maxlen, embedding_length)
 x_eval, y_eval = get_embedded_data(eval_data, maxlen, embedding_length)
@@ -185,7 +190,7 @@ def print_fn(str):
 def lr_schedule(epoch):
     # Learning Rate Schedule
 
-    lr = 1e-2
+    lr = 1e-1
     if epoch >= epochs * 0.9:
         lr *= 0.5e-3
     elif epoch >= epochs * 0.8:
@@ -202,24 +207,26 @@ def lr_schedule(epoch):
 
 # In[9]:
 
-
-
 # In[10]:
 
 
 # build the model: a single LSTM
 print_fn('Build model...')
 
-model = Sequential()
-
-if dense_size != 0:
-    model.add(Dense(dense_size,input_shape=(maxlen, 259 * embedding_length )))
-    model.add(LSTM(units))
-else:
-    model.add(LSTM(units, input_shape=(maxlen, 259 * embedding_length )))
-
-model.add(Dense(259))
-model.add(Activation('softmax'))
+# model = Sequential()
+# if dense_size != 0:
+#     model.add(Dense(dense_size,input_shape=(maxlen, 259 * embedding_length )))
+#     model.add(LSTM(units))
+# else:
+#     model.add(LSTM(units, input_shape=(maxlen, 259 * embedding_length )))
+# model.add(Dense(259))
+# model.add(Activation('softmax'))
+train_output_shape = 259
+train_input_shape = ( x_train.shape[1], x_train.shape[2] )
+from ConvModel import *
+from ConvResModel import *
+from ConvOtherStructureModel import *
+model = resnet_v1_110(input_shape=train_input_shape,output_shape = train_output_shape)
 
 optimizer = Adam(lr=lr_schedule(0))
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
@@ -340,6 +347,10 @@ def on_epoch_end(epoch, logs):
     # Function invoked at end of each epoch. Prints generated data.
     if (epoch+1) % (epochs // 5) != 0:
         return
+    elif(epoch <= epochs * 4 / 5):
+        return
+
+
 
     print_fn("")
     print_fn('----- Generating Music after Epoch: %d' % epoch)
