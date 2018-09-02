@@ -85,8 +85,8 @@ exp_name = "%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d_%s"
 
 # train_dataset_path = os.path.join(dataset_dir, dataset_name+'_train.pkl')
 # eval_dataset_path = os.path.join(dataset_dir, dataset_name+'_eval.pkl')
-train_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_train.pkl'
-eval_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_eval.pkl'
+train_dataset_path = '/home/ouyangzhihao/sss/AAAI/common/Mag_Data/Poly_List_Datasets/new_data/Bach_new_train.pkl'
+eval_dataset_path = '/home/ouyangzhihao/sss/AAAI/common/Mag_Data/Poly_List_Datasets/new_data/Bach_new_eval.pkl'
 
 with open(train_dataset_path, "rb") as train_file:
     train_data = pkl.load(train_file)
@@ -122,7 +122,7 @@ train_data = train_data[0:10000]
 eval_data = eval_data[0:2000]
 
 # In[6]:
-log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/8_26_Music'
+log_root = '/home/ouyangzhihao/sss/AAAI/yk/MRS/Music_Research_Exp/Music_Text_Gneration/8_26_Music'
 log_dir = os.path.join(log_root, "logdir", exp_name)
 TB_log_dir = os.path.join(log_root, 'TB_logdir', exp_name)
 console_log_dir = os.path.join(log_root, log_dir, "console")
@@ -179,7 +179,7 @@ x_train, y_train = get_embedded_data(train_data, maxlen, embedding_length)
 x_eval, y_eval = get_embedded_data(eval_data, maxlen, embedding_length)
 
 # In[8]:
-
+import ipdb; ipdb.set_trace()
 
 def print_fn(str):
     print(str)
@@ -403,7 +403,7 @@ print(max_acc_log_line, file=open(max_acc_log_path, 'a'))
 rlaunch --cpu=4 --gpu=1 --memory=16000 --preemptible=no bash
 
 
-python3 polyphony_train.py --batch_size=512 \
+python3 polyphony_train_conv.py --batch_size=512 \
     --epochs=20 \
     --units=512 \
     --maxlen=16 \
