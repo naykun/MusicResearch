@@ -110,6 +110,7 @@ x = x[0:len(y)]
 print('x shape ', x.shape)
 print('y shape ',y.shape)
 
+import ipdb; ipdb.set_trace()
 # build the model:  LSTM
 print('Build model...')
 train_input_shape = (x.shape[1], x.shape[2])
@@ -254,3 +255,4 @@ shutil.rmtree(model_log_dir)
 os.mkdir(model_log_dir)
 model_name = os.path.join(model_log_dir, '%d.h5' % epochs)
 model.save(model_name)
+

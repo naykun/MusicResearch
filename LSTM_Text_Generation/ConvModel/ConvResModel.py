@@ -21,6 +21,13 @@ xxl_filter_num, xxl_filter_size = 128, 128
 default_activation = 'relu'
 kernel_size = s_filter_size
 
+#Small filter_size
+# s_filter_num, s_filter_size = 8 , 2
+# m_filter_num, m_filter_size = 16, 3
+# l_filter_num, l_filter_size = 32, 3
+# xl_filter_num, xl_filter_size = 64, 3
+# xxl_filter_num, xxl_filter_size = 128, 3
+
 
 ### Accuracy :22epoch 99%, max acc : 0.9997593572988782,  weights num: 2,336,932
 def resnet_v1_MoreLocal(input_shape, output_shape, depth=3 * 6 + 2):

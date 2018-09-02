@@ -1,4 +1,6 @@
 # For logs
+*.npy
+AAAI
 TB_logdir
 TB_log
 *.txt

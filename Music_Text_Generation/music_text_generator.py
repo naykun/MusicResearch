@@ -16,6 +16,7 @@ has at least ~100k characters. ~1M is better.
 '''
 
 from __future__ import print_function
+from keras import backend as K
 from keras.callbacks import LambdaCallback
 from keras.models import Sequential
 from keras.layers import Dense, Activation
@@ -37,21 +38,22 @@ from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras.callbacks import LambdaCallback
 
 from my_to_midi import *
+from ConvModel import *
 
 # In[ ]:
 
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_integer('batch_size', 1024, 'LSTM Layer Units Number')
-tf.app.flags.DEFINE_integer('epochs', 5, 'Total epochs')
-tf.app.flags.DEFINE_integer('maxlen', 48, 'Max length of a sentence')
+tf.app.flags.DEFINE_integer('epochs', 10, 'Total epochs')
+tf.app.flags.DEFINE_integer('maxlen', 128, 'Max length of a sentence')
 tf.app.flags.DEFINE_integer('generate_length', 400, 'Number of steps of generated music')
-tf.app.flags.DEFINE_integer('units', 128, 'LSTM Layer Units Number')
+tf.app.flags.DEFINE_integer('units', 64, 'LSTM Layer Units Number')
 tf.app.flags.DEFINE_integer('dense_size', 0, 'Dense Layer Size')
 tf.app.flags.DEFINE_integer('step', 8, 'Step length when building dataset')
 tf.app.flags.DEFINE_integer('embedding_length', 1, 'Embedding length')
 tf.app.flags.DEFINE_string('dataset_name', 'Bach', 'Dataset name will be the prefix of exp_name')
-tf.app.flags.DEFINE_string('dataset_dir', 'datasets/Bach/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
+tf.app.flags.DEFINE_string('dataset_dir', '/home/ouyangzhihao/sss/Mag/Mag_Data/TextMelody/Bach/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
 
 # In[2]:
 
@@ -72,7 +74,7 @@ dataset_dir = FLAGS.dataset_dir
 
 date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
 
-exp_name = "%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
+exp_name = "Conv%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
                                                                         batch_size, epochs, units, dense_size, maxlen, step,
                                                                         embedding_length, date_and_time)
 
@@ -118,13 +120,15 @@ def text_to_events(str):
 # In[6]:
 
 
-log_dir = os.path.join("logdir/", exp_name)
-TB_log_dir = os.path.join('TB_logdir/', exp_name)
-console_log_dir = os.path.join(log_dir, "console")
-model_log_dir = os.path.join('Model_logdir', exp_name)
-text_log_dir = os.path.join(log_dir, "text")
-midi_log_dir = os.path.join(log_dir, "midi")
 
+
+log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/9_1_AAAI_single_multi_track/single_track_bach'
+log_dir = os.path.join(log_root, "logdir", exp_name)
+TB_log_dir = os.path.join(log_root, 'TB_logdir', exp_name)
+console_log_dir = os.path.join(log_root, log_dir, "console")
+model_log_dir = os.path.join(log_root, 'Model_logdir', exp_name)
+text_log_dir = os.path.join(log_root, log_dir, "text")
+midi_log_dir = os.path.join(log_root, log_dir, "midi")
 
 def make_log_dirs(dirs):
     for dir in dirs:
@@ -157,7 +161,7 @@ def get_embedded_data(text, maxlen, embedding_length):
 
     inputs_emb = []
     label_emb = []
-    for i in range(0, len(inputs) - embedding_length, 1):
+    for i in range(0, len(inputs) - embedding_length, step):
         inputs_emb.append(inputs[i: i + embedding_length].flatten())
         label_emb.append(labels[i + embedding_length])
 
@@ -189,9 +193,8 @@ def print_fn(str):
         print(str, file=f)
 
 def lr_schedule(epoch):
-    # Learning Rate Schedule
-
-    lr = 1e-1
+    #Learning Rate Schedule
+    lr = 1e-2
     if epoch >= epochs * 0.9:
         lr *= 0.5e-3
     elif epoch >= epochs * 0.8:
@@ -200,12 +203,8 @@ def lr_schedule(epoch):
         lr *= 1e-2
     elif epoch >= epochs * 0.4:
         lr *= 1e-1
-    print_fn('Learning rate: %f' % lr)
-
-    lr = 1e-3
+    print('Learning rate: ', lr)
     return lr
-
-
 # In[9]:
 
 
@@ -216,16 +215,29 @@ def lr_schedule(epoch):
 # build the model: a single LSTM
 print_fn('Build model...')
 
-model = Sequential()
+# model = Sequential()
+#
+# if dense_size != 0:
+#     model.add(Dense(dense_size,input_shape=(maxlen, len(chars)*embedding_length )))
+#     model.add(LSTM(units))
+# else:
+#     model.add(LSTM(units, input_shape=(maxlen, len(chars)*embedding_length )))
+#
+# model.add(Dense(len(chars)))
+# model.add(Activation('softmax'))
 
-if dense_size != 0:
-    model.add(Dense(dense_size,input_shape=(maxlen, len(chars)*embedding_length )))
-    model.add(LSTM(units))
-else:
-    model.add(LSTM(units, input_shape=(maxlen, len(chars)*embedding_length )))
+# omit the batchsize dim
+train_input_shape = x_train.shape[1:]
+train_output_shape = (y_train.shape[1])
+print('train_input_shape', train_input_shape)
+print('train_output_shape', train_output_shape)
+print('x_train.shape', x_train.shape)
+print('y_train.shape', y_train.shape)
 
-model.add(Dense(len(chars)))
-model.add(Activation('softmax'))
+# model = resnet_v1_110(input_shape=train_input_shape,output_shape = train_output_shape)
+# model = get_conv1d_model_naive(input_shape=train_input_shape,output_shape = train_output_shape)
+model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
+# model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
 
 optimizer = Adam(lr=lr_schedule(0))
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
@@ -262,7 +274,7 @@ def generate_music(epoch, text, diversity, start_index, is_train=False):
             for idx in range(embedding_length):
                 x_pred[0, t, idx * embedding_length + char_indices[char]] = 1.
 
-        preds = model.predict(x_pred, verbose=0)[0]
+        preds = model.predict([x_pred, x_pred], verbose=0)[0]
         next_index = sample(preds, diversity)
         next_char = indices_char[next_index]
 
@@ -328,8 +340,13 @@ def baseline_music(epoch, text, start_index, is_train=False):
 
     print_fn("Write %s.midi to %s" % (log_name, midi_log_dir))
 
-
+converage_epoch = -1
 def on_epoch_end(epoch, logs):
+    # Function invoked at end of each epoch. Prints generated data.
+    global converage_epoch
+    if(converage_epoch < 0.0 ):
+        if(logs['acc'] > 0.85):
+            converage_epoch = epoch
     # Function invoked at end of each epoch. Prints generated text.
     if (epoch+1) % (epochs // 5) != 0:
         return
@@ -343,7 +360,7 @@ def on_epoch_end(epoch, logs):
     baseline_music(epoch=epoch, text=eval_text, start_index=start_index)
     baseline_music(epoch=epoch, text=eval_text, start_index=start_index, is_train=True)
 
-    for diversity in [0.2, 0.5, 0.8, 1.0, 1.2]:
+    for diversity in [0.2, 1.2]:
         generate_music(epoch=epoch, text=eval_text, diversity=diversity, start_index=0)
         generate_music(epoch=epoch, text=eval_text, diversity=diversity, start_index=start_index)
         generate_music(epoch=epoch, text=eval_text, diversity=diversity, start_index=start_index, is_train=True)
@@ -354,26 +371,47 @@ def on_epoch_end(epoch, logs):
 print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
 lr_scheduler = LearningRateScheduler(lr_schedule, verbose=0)
 # 参照下面代码加一下TensorBoard
-tb_callbacks = TensorBoard(log_dir=TB_log_dir)
+class LRTensorBoard(TensorBoard):
+    def __init__(self, log_dir):  # add other arguments to __init__ if you need
+        super().__init__(log_dir=log_dir)
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs.update({'lr': K.eval(self.model.optimizer.lr)})
+        super().on_epoch_end(epoch, logs)
+
+tb_callbacks = LRTensorBoard(log_dir = TB_log_dir)
 
 print_fn("*"*20+exp_name+"*"*20)
 print_fn('x_train shape:'+str(np.shape(x_train)) )
 print_fn('y_train shape:'+str(np.shape(y_train)) )
 
-history_callback = model.fit(x_train, y_train,
-                             validation_data=(x_eval, y_eval),
+history_callback = model.fit([x_train,x_train], y_train,
+                             validation_data=([x_eval,x_eval], y_eval),
                              verbose=1,
                              batch_size=batch_size,
                              epochs=epochs,
                              callbacks=[tb_callbacks, lr_scheduler, print_callback])
 
+##Predict and get the final result
+y_preds = model.predict(x_train, batch_size=batch_size)
+y_true = y_train
+
+final_perplexity = get_perplexity(y_true, y_pred)
+final_cross_entropy = get_cross_entropy(y_true, y_pred)
+final_accuracy = get_accuracy(y_true, y_pred)
+model_size = model.count_params()
+speed = 0.0
+
 acc_history = history_callback.history["acc"]
 max_acc = np.max(acc_history)
 print_fn('Experiment %s max accuracy:%f' % (exp_name, max_acc))
-max_acc_log_line = "%s\t%d\t%d\t%d\t%d\t%d\t%d\t%f" % (exp_name,
-                                                   epochs, units, dense_size, maxlen, step, embedding_length, max_acc)
+# max_acc_log_line = "%s\t%d\t%d\t%d\t%d\t%d\t%d\t%f" % (exp_name,
+#                                                    epochs, units, dense_size, maxlen, step, embedding_length, max_acc)
 
+max_acc_log_line = "%s\t%d\t%f\t%f\t&f\t%d" % (exp_name, model_size, final_accuracy, final_cross_entropy,
+                                               speed, converage_epoch)
 print(max_acc_log_line, file=open(max_acc_log_path, 'a'))
+
 
 
 '''

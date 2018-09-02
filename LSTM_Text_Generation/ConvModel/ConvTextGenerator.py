@@ -66,12 +66,13 @@ def lr_schedule(epoch):
         lr *= 1e-1
     print('Learning rate: ', lr)
     return lr
-
+log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/LSTM_Text_Generation/'
+# log_root = '../'
 exp_name = 'CResX1LocalAccom_WinSize%d_BS%d_%dpart_epoch%d' % (maxlen, batch_size, how_much_part, epochs)
-log = '../res/' + exp_name + '.txt'
-tb_log = '../TB_logdir/LSTM/WinSize_DenseEmbedding/' + exp_name
-max_acc_log = '../res/max_acc.txt'
-model_log_dir = '../Models/' + exp_name
+log = log_root + 'res/' + exp_name + '.txt'
+tb_log = log_root + 'TB_logdir/LSTM/WinSize_DenseEmbedding/' + exp_name
+max_acc_log = log_root + 'res/max_acc.txt'
+model_log_dir = log_root = 'Models/' + exp_name
 initial_epoch = 0
 
 if(os.path.exists(os.path.join(model_log_dir, '%d.h5' % epochs))):
@@ -124,11 +125,11 @@ print('Build model...')
 train_input_shape = (maxlen, len(chars))
 train_output_shape = (len(chars))
 
-# model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
+model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_resnet(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_complex_model(input_shape_melody=train_input_shape, input_shape_accom=train_input_shape,  output_shape=train_output_shape)
-model = get_complex_model_resNet_melody(input_shape_melody=train_input_shape, input_shape_accom=train_input_shape,  output_shape=train_output_shape)
+# model = get_complex_model_resNet_melody(input_shape_melody=train_input_shape, input_shape_accom=train_input_shape,  output_shape=train_output_shape)
 
 model.summary()
 optimizer = Adam(lr=lr_schedule(0))

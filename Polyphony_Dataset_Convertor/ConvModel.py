@@ -225,14 +225,27 @@ def get_two_pipeline_model(input_shape, output_shape, input_unit_length=16):
     return model
 
 
-def get_naive_conv1d_model(input_shape, output_shape):
+def get_conv1d_model_naive(input_shape, output_shape):
     inputs = Input(shape=input_shape)
     xxx = inputs
 
+    xxx = Conv1D(filters=s_filter_num, kernel_size=s_filter_size, padding='same', activation=default_activation,
+                 strides=1, dilation_rate=1)(xxx)
+    xxx = BatchNormalization()(xxx)
+    res_x = xxx
+    xxx = Conv1D(filters=s_filter_num, kernel_size=s_filter_size, padding='same', activation=default_activation,
+                 strides=1, dilation_rate=2)(xxx)
+    xxx = BatchNormalization()(xxx)
+    xxx = Conv1D(filters=s_filter_num, kernel_size=s_filter_num, padding='same', activation=default_activation,
+                 strides=1, dilation_rate=4)(xxx)
+    xxx = BatchNormalization()(xxx)
+    keras.layers.add([xxx, res_x])
     xxx = Conv1D(filters=l_filter_num, kernel_size=s_filter_num, padding='valid',
-                             activation=default_activation,strides=1)(xxx)
+                             activation=default_activation, strides=1)(xxx)
     xxx = Conv1D(filters=xl_filter_num, kernel_size=m_filter_num, padding='valid',
                              activation=default_activation, strides=1)(xxx)
+    xxx = BatchNormalization()(xxx)
+    # xxx = Activation(default_activation)(xxx)
     # we use max pooling:
     xxx = GlobalMaxPooling1D()(xxx)
     xxx = Dense(output_shape)(xxx)
@@ -240,7 +253,7 @@ def get_naive_conv1d_model(input_shape, output_shape):
     model = Model(inputs=inputs, outputs=predictions)
     return model
 
-def get_lstm_model(input_shape, output_shape, LayerSize=256):
+def get_lstm_model(input_shape, output_shape, LayerSize=512):
     inputs = Input(shape=input_shape)
     xxx = LSTM(LayerSize, return_sequences=False)(inputs)
     xxx = Dense(output_shape)(xxx)
@@ -260,43 +273,6 @@ def same_padding_second_dim(x, padding_length, name):
     x = Lambda(lambda x: K.temporal_padding(x, padding=(l, r)))
     # x = K.temporal_padding(x, padding=(l,r))
     return x
-
-def get_resNet_model(input_shape, output_shape):
-    inputs = Input(shape=input_shape)
-    xxx = inputs
-    # x = ZeroPadding2D(padding=(3, 3), name='conv1_pad')(img_input)
-    # x = Conv2D(64, (7, 7), strides=(2, 2), padding='valid', name='conv1')(x)
-    # x = BatchNormalization(axis=bn_axis, name='bn_conv1')(x)
-    # x = Activation('relu')(x)
-    # x = MaxPooling2D((3, 3), strides=(2, 2))(x)
-    xxx = Conv1D(filters=xl_filter_num, kernel_size=m_filter_num, padding='same',
-                             activation=None, strides=1)(xxx)
-    xxx = BatchNormalization()(xxx)
-    xxx = Activation('relu')(xxx)
-    xxx = MaxPooling1D(pool_size=1, padding='same', strides=1)(xxx)
-
-    xxx = resnet_v1(input_shape, num_classes=output_shape, depth=3 * 6 + 2, input_tensor=xxx, local_conv=False)
-
-    xxx = LocallyConnected1D(filters=l_filter_num, kernel_size=m_filter_num, padding='valid',
-                             activation=default_activation, strides=1)(xxx)
-    xxx = BatchNormalization()(xxx)
-    xxx = LocallyConnected1D(filters=l_filter_num, kernel_size=m_filter_num, padding='valid',
-                             activation=default_activation, strides=1)(xxx)
-    xxx = BatchNormalization()(xxx)
-    xxx = LocallyConnected1D(filters=xl_filter_num, kernel_size=4, padding='valid',
-                             activation=default_activation, strides=1)(xxx)
-
-
-    # xxx = BatchNormalization()(xxx)
-
-    # xxx = MaxPooling1D(pool_size=4)(xxx)
-    #     # xxx = Flatten()(xxx)
-    xxx = GlobalMaxPooling1D()(xxx)
-    xxx = Dense(output_shape,
-                    activation='softmax',
-                    kernel_initializer='he_normal')(xxx)
-    model = Model(inputs=inputs, outputs=xxx)
-    return model
 
 def resnet_layer_naive(inputs,
                  num_filters=16,
@@ -540,3 +516,30 @@ def get_resNet_model_multiple_out(input_shape, output_shape, output_n):
 
     model = Model(inputs=inputs, outputs=predictions)
     return model
+
+
+def numpy_to_tensor(y_true, y_pred):
+    y_true, y_pred = np.array(y_true), np.array(y_pred)
+    y_true = K.constant(y_true)
+    y_pred = K.constant(y_pred)
+    return y_true, y_pred
+
+def get_perplexity(y_true, y_pred):
+    y_true, y_pred = numpy_to_tensor(y_true, y_pred)
+    cross_entropy = K.categorical_crossentropy(y_true, y_pred)
+    perplexity = K.pow(2.0, cross_entropy)
+    perplexity = K.mean(perplexity)
+    perplexity = K.eval(perplexity)
+    return perplexity
+
+def get_cross_entropy(y_true, y_pred):
+    y_true, y_pred = numpy_to_tensor(y_true, y_pred)
+    cross_entropy = K.categorical_crossentropy(y_true, y_pred)
+    cross_entropy = K.mean(cross_entropy)
+    cross_entropy = K.eval(cross_entropy)
+    return cross_entropy
+
+def get_accuracy(y_true, y_pred):
+    acc = K.mean(K.equal(K.argmax(y_true, axis=-1), K.argmax(y_pred, axis=-1)))
+    acc = K.eval(acc)
+    return acc

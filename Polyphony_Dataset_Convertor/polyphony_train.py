@@ -168,6 +168,8 @@ def get_embedded_data(data, maxlen, embedding_length):
 # In[7]:
 
 
+train_data = train_data[:1000]
+eval_data = eval_data[:100]
 
 print('Vectorization...')
 x_train, y_train = get_embedded_data(train_data, maxlen, embedding_length)
@@ -175,6 +177,11 @@ x_eval, y_eval = get_embedded_data(eval_data, maxlen, embedding_length)
 
 # In[8]:
 
+print(np.shape(x_train))
+print(np.shape(y_train))
+print(np.shape(x_train[0]))
+print(np.shape(y_train[0]))
+import ipdb; ipdb.set_trace()
 
 def print_fn(str):
     print(str)

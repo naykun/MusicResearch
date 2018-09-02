@@ -261,43 +261,6 @@ def same_padding_second_dim(x, padding_length, name):
     # x = K.temporal_padding(x, padding=(l,r))
     return x
 
-def get_resNet_model(input_shape, output_shape):
-    inputs = Input(shape=input_shape)
-    xxx = inputs
-    # x = ZeroPadding2D(padding=(3, 3), name='conv1_pad')(img_input)
-    # x = Conv2D(64, (7, 7), strides=(2, 2), padding='valid', name='conv1')(x)
-    # x = BatchNormalization(axis=bn_axis, name='bn_conv1')(x)
-    # x = Activation('relu')(x)
-    # x = MaxPooling2D((3, 3), strides=(2, 2))(x)
-    xxx = Conv1D(filters=xl_filter_num, kernel_size=m_filter_num, padding='same',
-                             activation=None, strides=1)(xxx)
-    xxx = BatchNormalization()(xxx)
-    xxx = Activation('relu')(xxx)
-    xxx = MaxPooling1D(pool_size=1, padding='same', strides=1)(xxx)
-
-    xxx = resnet_v1(input_shape, num_classes=output_shape, depth=3 * 6 + 2, input_tensor=xxx, local_conv=False)
-
-    xxx = LocallyConnected1D(filters=l_filter_num, kernel_size=m_filter_num, padding='valid',
-                             activation=default_activation, strides=1)(xxx)
-    xxx = BatchNormalization()(xxx)
-    xxx = LocallyConnected1D(filters=l_filter_num, kernel_size=m_filter_num, padding='valid',
-                             activation=default_activation, strides=1)(xxx)
-    xxx = BatchNormalization()(xxx)
-    xxx = LocallyConnected1D(filters=xl_filter_num, kernel_size=4, padding='valid',
-                             activation=default_activation, strides=1)(xxx)
-
-
-    # xxx = BatchNormalization()(xxx)
-
-    # xxx = MaxPooling1D(pool_size=4)(xxx)
-    #     # xxx = Flatten()(xxx)
-    xxx = GlobalMaxPooling1D()(xxx)
-    xxx = Dense(output_shape,
-                    activation='softmax',
-                    kernel_initializer='he_normal')(xxx)
-    model = Model(inputs=inputs, outputs=xxx)
-    return model
-
 def resnet_layer_naive(inputs,
                  num_filters=16,
                  kernel_size=3,

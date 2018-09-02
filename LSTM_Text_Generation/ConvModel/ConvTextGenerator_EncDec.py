@@ -27,12 +27,14 @@ import io
 import os
 import shutil
 from ConvModel import *
+from ConvResModel import *
+from ConvOtherStructureModel import *
 
 if(len(sys.argv)!=1):
     maxlen = int(sys.argv[2])
     how_much_part = int(sys.argv[3])
 else:
-    maxlen = 32
+    maxlen = 128
     how_much_part = 10
 
 epochs = 50
@@ -40,7 +42,7 @@ batch_size = 1024
 
 def lr_schedule(epoch):
     #Learning Rate Schedule
-    lr = 1e-3
+    lr = 1e-2
     if epoch >= epochs * 0.9:
         lr *= 0.5e-3
     elif epoch >= epochs * 0.8:
@@ -52,12 +54,15 @@ def lr_schedule(epoch):
     print('Learning rate: ', lr)
     return lr
 
-exp_name = 'Debug_WinSize%d_BS%d_%dpart_epoch%d' % (maxlen, batch_size, how_much_part, epochs)
-log = '../res/' + exp_name + '.txt'
-tb_log = '../TB_logdir/CNN/' + exp_name
-max_acc_log = '../res/max_acc.txt'
-model_log_dir = '../Models/' + exp_name
+log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/LSTM_Text_Generation/'
+# log_root = '../'
+exp_name = 'IncLocLKernal_WinSize%d_BS%d_%dpart_epoch%d' % (maxlen, batch_size, how_much_part, epochs)
+log = log_root + 'res/' + exp_name + '.txt'
+tb_log = log_root + 'TB_logdir/LSTM/WinSize_DenseEmbedding/' + exp_name
+max_acc_log = log_root + 'res/max_acc.txt'
+model_log_dir = log_root + 'Models/' + exp_name
 initial_epoch = 0
+
 
 if(os.path.exists(os.path.join(model_log_dir, '%d.h5' % epochs))):
     print('Already Finished Training')
@@ -85,7 +90,7 @@ char_indices = dict((c, i) for i, c in enumerate(chars))
 indices_char = dict((i, c) for i, c in enumerate(chars))
 
 # cut the text in semi-redundant sequences of maxlen characters
-step = 1
+step = maxlen
 sentences = []
 next_chars = []
 for i in range(0, len(text) - maxlen, step):
@@ -101,6 +106,8 @@ for i, sentence in enumerate(sentences):
         x[i, t, char_indices[char]] = 1
     y[i, char_indices[next_chars[i]]] = 1
 
+
+# np.random.shuffle(y)
 print('x shape ', x.shape)
 print('y shape ',y.shape)
 
@@ -109,15 +116,24 @@ print('Build model...')
 train_input_shape = (maxlen, len(chars))
 train_output_shape = (len(chars))
 
-model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
+# model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_model_old(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_two_pipeline_model(input_shape=train_input_shape,output_shape = train_output_shape)
 
 # model = get_naive_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_model_simple(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_resNet_model(input_shape=train_input_shape,output_shape = train_output_shape)
+# model = resnet_v1_110(input_shape=train_input_shape,output_shape = train_output_shape)
+# model = resnet_v1_simple(input_shape=train_input_shape,output_shape = train_output_shape)
+
+# model = InceptionV3(input_shape=train_input_shape,classes = train_output_shape)
+model = InceptionV3_Local(input_shape=train_input_shape,classes = train_output_shape)
 
 # model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
+
+
+
+
 # model = get_conv1d_resnet(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_complex_model(input_shape_melody=train_input_shape, input_shape_accom=train_input_shape,  output_shape=train_output_shape)
 # model = get_complex_model_resNet_melody(input_shape_melody=train_input_shape, input_shape_accom=train_input_shape,  output_shape=train_output_shape)
@@ -126,9 +142,17 @@ model.summary()
 optimizer = Adam(lr=lr_schedule(0))
 
 from keras import metrics
+def perplexity(y_true, y_pred):
+    cross_entropy = K.categorical_crossentropy(y_true, y_pred)
+    perplexity = K.pow(2.0, cross_entropy)
 
-model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy','ce'])
+    #Another Method
+    # oneoverlog2 = 1.442695
+    # result = K.log(x) * oneoverlog2
+    return perplexity
 
+model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy', 'ce', perplexity])
+# metrics.categorical_accuracy
 #Continue train
 if(os.path.exists(model_log_dir)):
     if(len(os.listdir(model_log_dir)) > 0 ):
@@ -240,3 +264,5 @@ shutil.rmtree(model_log_dir)
 os.mkdir(model_log_dir)
 model_name = os.path.join(model_log_dir, '%d.h5' % epochs)
 model.save(model_name)
+
+print('Step=5')

@@ -10,11 +10,10 @@ import keras
 import keras.backend as K
 import numpy as np
 from keras.regularizers import l2
-
 # from keras_contrib.layers import InstanceNormlization, Weight
 
 melody_feature_length = 100
-s_filter_num, s_filter_size = 8, 8
+s_filter_num, s_filter_size = 8 , 8
 m_filter_num, m_filter_size = 16, 16
 l_filter_num, l_filter_size = 32, 32
 xl_filter_num, xl_filter_size = 64, 64
@@ -22,8 +21,7 @@ xxl_filter_num, xxl_filter_size = 128, 128
 default_activation = 'relu'
 kernel_size = s_filter_size
 
-
-# Small filter_size
+#Small filter_size
 # s_filter_num, s_filter_size = 8 , 2
 # m_filter_num, m_filter_size = 16, 3
 # l_filter_num, l_filter_size = 32, 3
@@ -48,29 +46,29 @@ def resnet_v1_MoreLocal(input_shape, output_shape, depth=3 * 6 + 2):
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 strides = 2  # downsample
             y = resnet_layer_naive(inputs=x,
-                                   num_filters=num_filters,
-                                   strides=strides)
+                             num_filters=num_filters,
+                             strides=strides)
             y = resnet_layer_naive(inputs=y,
-                                   num_filters=num_filters,
-                                   activation=None)
+                             num_filters=num_filters,
+                             activation=None)
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 # linear projection residual shortcut connection to match
                 # changed dims
                 x = resnet_layer_local(inputs=x,
-                                       num_filters=num_filters,
-                                       kernel_size=16,
-                                       strides=strides,
-                                       activation=None,
-                                       batch_normalization=False)
+                                 num_filters=num_filters,
+                                 kernel_size=16,
+                                 strides=strides,
+                                 activation=None,
+                                 batch_normalization=False)
             x = keras.layers.add([x, y])
             x = Activation('relu')(x)
         num_filters *= 2
 
     x = resnet_layer_local(inputs=x,
-                           num_filters=64,
-                           kernel_size=16,
-                           strides=1,
-                           batch_normalization=True)
+                                 num_filters=64,
+                                 kernel_size=16,
+                                 strides=1,
+                                 batch_normalization=True)
     # Add classifier on top.
     # v1 does not use BN after last shortcut connection-ReLU
     x = AveragePooling1D(pool_size=8)(x)
@@ -82,7 +80,6 @@ def resnet_v1_MoreLocal(input_shape, output_shape, depth=3 * 6 + 2):
     # Instantiate model.
     model = Model(inputs=inputs, outputs=outputs)
     return model
-
 
 ### Accuracy :23epoch 98%, max acc : 0.9987042315916909, weights num: 501,252
 def resnet_v1_simple(input_shape, output_shape, depth=3 * 6 + 2):
@@ -128,20 +125,20 @@ def resnet_v1_simple(input_shape, output_shape, depth=3 * 6 + 2):
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 strides = 2  # downsample
             y = resnet_layer_naive(inputs=x,
-                                   num_filters=num_filters,
-                                   strides=strides)
+                             num_filters=num_filters,
+                             strides=strides)
             y = resnet_layer_naive(inputs=y,
-                                   num_filters=num_filters,
-                                   activation=None)
+                             num_filters=num_filters,
+                             activation=None)
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 # linear projection residual shortcut connection to match
                 # changed dims
                 x = resnet_layer_local(inputs=x,
-                                       num_filters=num_filters,
-                                       kernel_size=16,
-                                       strides=strides,
-                                       activation=None,
-                                       batch_normalization=False)
+                                 num_filters=num_filters,
+                                 kernel_size=16,
+                                 strides=strides,
+                                 activation=None,
+                                 batch_normalization=False)
             x = keras.layers.add([x, y])
             x = Activation('relu')(x)
         num_filters *= 2
@@ -157,7 +154,6 @@ def resnet_v1_simple(input_shape, output_shape, depth=3 * 6 + 2):
     # Instantiate model.
     model = Model(inputs=inputs, outputs=outputs)
     return model
-
 
 ### Accuracy :27epoch 98%, max acc : 0.9999, Weights num : 12,409,988
 def get_resNet_model(input_shape, output_shape):
@@ -192,11 +188,11 @@ def get_resNet_model(input_shape, output_shape):
                     # linear projection residual shortcut connection to match
                     # changed dims
                     x = resnet_layer_naive(inputs=x,
-                                           num_filters=num_filters,
-                                           kernel_size=16,
-                                           strides=strides,
-                                           activation=None,
-                                           batch_normalization=True)
+                                     num_filters=num_filters,
+                                     kernel_size=16,
+                                     strides=strides,
+                                     activation=None,
+                                     batch_normalization=True)
                 x = keras.layers.add([x, y])
                 x = Activation(default_activation)(x)
             num_filters *= 2
@@ -222,7 +218,6 @@ def get_resNet_model(input_shape, output_shape):
                 kernel_initializer='he_normal')(xxx)
     model = Model(inputs=inputs, outputs=xxx)
     return model
-
 
 def get_resnet_model_naive(input_shape, output_shape, depth=3 * 6 + 2):
     """ResNet Version 1 Model builder [a]
@@ -267,20 +262,20 @@ def get_resnet_model_naive(input_shape, output_shape, depth=3 * 6 + 2):
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 strides = 2  # downsample
             y = resnet_layer_naive(inputs=x,
-                                   num_filters=num_filters,
-                                   strides=strides)
+                             num_filters=num_filters,
+                             strides=strides)
             y = resnet_layer_naive(inputs=y,
-                                   num_filters=num_filters,
-                                   activation=None)
+                             num_filters=num_filters,
+                             activation=None)
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 # linear projection residual shortcut connection to match
                 # changed dims
                 x = resnet_layer_naive(inputs=x,
-                                       num_filters=num_filters,
-                                       kernel_size=16,
-                                       strides=strides,
-                                       activation=None,
-                                       batch_normalization=False)
+                                 num_filters=num_filters,
+                                 kernel_size=16,
+                                 strides=strides,
+                                 activation=None,
+                                 batch_normalization=False)
             x = keras.layers.add([x, y])
             x = Activation('relu')(x)
         num_filters *= 2
@@ -297,14 +292,13 @@ def get_resnet_model_naive(input_shape, output_shape, depth=3 * 6 + 2):
     model = Model(inputs=inputs, outputs=outputs)
     return model
 
-
 def resnet_layer_naive(inputs,
-                       num_filters=16,
-                       kernel_size=m_filter_size,
-                       strides=1,
-                       activation='relu',
-                       batch_normalization=True,
-                       conv_first=True):
+                 num_filters=16,
+                 kernel_size=m_filter_size,
+                 strides=1,
+                 activation='relu',
+                 batch_normalization=True,
+                 conv_first=True):
     """1D Convolution-Batch Normalization-Activation stack builder
 
     # Arguments
@@ -343,37 +337,37 @@ def resnet_layer_naive(inputs,
     return x
 
 
-# padding_length should be the next conv's filter size
+#padding_length should be the next conv's filter size
 def same_padding_second_dim(x, padding_length, name):
-    if (padding_length % 2 == 0):
-        l, r = padding_length / 2, padding_length / 2 - 1
+    if(padding_length % 2 == 0 ):
+        l , r = padding_length/2 , padding_length/2 - 1
     else:
-        l, r = padding_length / 2, padding_length / 2 + 1
-    l, r = int(l), int(r)
+        l , r = padding_length/2 , padding_length/2 + 1
+    l , r = int(l), int(r)
 
     # x = Lambda(lambda x: K.temporal_padding(x, padding=(l,r)), name='same_padding_second_dim' + str(name))
     x = Lambda(lambda x: K.temporal_padding(x, padding=(l, r)))
     # x = K.temporal_padding(x, padding=(l,r))
     return x
 
-
 def resnet_layer_local(inputs,
-                       num_filters=16,
-                       kernel_size=s_filter_size,
-                       strides=1,
-                       activation=default_activation,
-                       batch_normalization=False,
-                       conv_first=True):
+                 num_filters=16,
+                 kernel_size=s_filter_size,
+                 strides=1,
+                 activation=default_activation,
+                 batch_normalization=False,
+                 conv_first=True):
+
     conv = LocallyConnected1D(num_filters,
-                              kernel_size=kernel_size,
-                              strides=strides,
-                              padding='valid',
-                              kernel_initializer='he_normal',
-                              )
+                  kernel_size=kernel_size,
+                  strides=strides,
+                  padding='valid',
+                  kernel_initializer='he_normal',
+                  )
     x = inputs
     if conv_first:
         # import ipdb; ipdb.set_trace()
-        x = same_padding_second_dim(x, padding_length=kernel_size, name=x.name.split('/')[0])(x)
+        x = same_padding_second_dim(x, padding_length=kernel_size, name = x.name.split('/')[0])(x)
         x = conv(x)
         if batch_normalization:
             x = BatchNormalization()(x)
@@ -384,10 +378,9 @@ def resnet_layer_local(inputs,
             x = BatchNormalization()(x)
         if activation is not None:
             x = Activation(activation)(x)
-        x = same_padding_second_dim(x, padding_length=kernel_size, name=x.name.split('/')[0])(x)
+        x = same_padding_second_dim(x, padding_length=kernel_size, name = x.name.split('/')[0])(x)
         x = conv(x)
     return x
-
 
 ##TODO
 ### Accuracy :22epoch 99%, max acc : 0.9997593572988782,  weights num: 2,336,932
@@ -399,16 +392,16 @@ def resnet_v1_110(input_shape, output_shape, depth=18 * 6 + 2):
     num_res_blocks = int((depth - 2) / 6)
 
     resnet_layer = resnet_layer_naive
-
+    
     inputs = Input(shape=input_shape)
     x = resnet_layer_naive(inputs=inputs)
     # Instantiate the stack of residual units
     for stack in range(3):
         resnet_layer = resnet_layer_naive
         for res_block in range(num_res_blocks):
-            if (res_block == num_res_blocks - 1):
+            if(res_block == num_res_blocks - 1):
                 resnet_layer = resnet_layer_local
-            if (stack == 2 and res_block >= num_res_blocks / 2):
+            if(stack ==2 and res_block >= num_res_blocks/2):
                 resnet_layer = resnet_layer_local
             strides = 1
             if stack > 0 and res_block == 0:  # first layer but not first stack
@@ -433,10 +426,10 @@ def resnet_v1_110(input_shape, output_shape, depth=18 * 6 + 2):
         num_filters *= 2
 
     x = resnet_layer_local(inputs=x,
-                           num_filters=64,
-                           kernel_size=16,
-                           strides=1,
-                           batch_normalization=True)
+                                 num_filters=64,
+                                 kernel_size=16,
+                                 strides=1,
+                                 batch_normalization=True)
     # Add classifier on top.
     # v1 does not use BN after last shortcut connection-ReLU
     x = AveragePooling1D(pool_size=8)(x)
