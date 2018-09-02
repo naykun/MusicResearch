@@ -77,8 +77,8 @@ get_model_fn = get_conv1d_model
 vector_dim = 259
 # train_dataset_path = os.path.join(dataset_dir, dataset_name+'_train.pkl')
 # eval_dataset_path = os.path.join(dataset_dir, dataset_name+'_eval.pkl')
-train_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_train.pkl'
-eval_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_eval.pkl'
+train_dataset_path = '/home/ouyangzhihao/sss/AAAI/common/Mag_Data/Poly_List_Datasets/new_data/Bach_new_train.pkl'
+eval_dataset_path = '/home/ouyangzhihao/sss/AAAI/common/Mag_Data/Poly_List_Datasets/new_data/Bach_new_eval.pkl'
 
 with open(train_dataset_path, "rb") as train_file:
     train_data = pkl.load(train_file)
@@ -174,7 +174,7 @@ x_train, y_train = get_embedded_data(train_data, maxlen, embedding_length)
 x_eval, y_eval = get_embedded_data(eval_data, maxlen, embedding_length)
 
 # In[8]:
-
+import ipdb; ipdb.set_trace()
 
 def print_fn(str):
     print(str)
@@ -429,7 +429,7 @@ print(max_acc_log_line, file=open(max_acc_log_path, 'a'))
 rlaunch --cpu=4 --gpu=1 --memory=16000 --preemptible=no bash
 
 
-python3 polyphony_train.py --batch_size=512 \
+python3 polyphony_train_conv.py --batch_size=512 \
     --epochs=20 \
     --units=512 \
     --maxlen=16 \
