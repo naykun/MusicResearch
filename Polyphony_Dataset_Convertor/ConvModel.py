@@ -20,126 +20,6 @@ xl_filter_num, xl_filter_size = 64, 64
 xxl_filter_num, xxl_filter_size = 128, 128
 default_activation = 'relu'
 
-def get_complex_model_8_13(input_shape_melody, input_shape_accom, output_shape):
-    note_length = input_shape_melody[1]
-
-    def get_melody_feature(main_melody):
-        # Dense Attention or Conv?
-        mask = Conv1D(filters=input_shape_melody[1], kernel_size=4,
-                      padding='same', activation='sigmoid', strides=1)(main_melody)
-        # x = merge([main_melody, mask], output_shape=input_shape_melody[0], name='attention_mul', mode='mul')
-        x = multiply([main_melody, mask], name='attention_mul')
-        x = LocallyConnected1D(filters=16, kernel_size=32, padding='valid', activation='sigmoid', strides=1)(x)
-        x = LocallyConnected1D(filters=32, kernel_size=16, padding='valid', activation='sigmoid', strides=1)(x)
-        x = GlobalMaxPooling1D()(x)
-        x = Dense(melody_feature_length, activation='sigmoid')(x)
-        return x
-
-    def get_current_melody_feature(before_accom, current_melody):
-        before_accom = Conv1D(filters=32, kernel_size=4, padding='same', activation='relu', strides=1)(before_accom)
-        before_accom = GlobalMaxPooling1D()(before_accom)
-
-        current_melody = Conv1D(filters=16, kernel_size=8, padding='same', activation='relu', strides=1)(current_melody)
-        current_melody = Conv1D(filters=32, kernel_size=4, padding='same', activation='relu', strides=1)(current_melody)
-        current_melody = GlobalMaxPooling1D()(current_melody)
-
-        x = concatenate([before_accom, current_melody])
-        x = Dense(melody_feature_length, activation='sigmoid')(x)
-        return x
-
-    input_melody = Input(shape=input_shape_melody)
-    input_accom = Input(shape=input_shape_accom)
-
-    # TODO part of the input_melody
-    # import ipdb; ipdb.set_trace()
-    input_accom_ = get_current_melody_feature(input_accom, input_melody)
-    input_melody_ = get_melody_feature(input_melody)
-
-    x = concatenate([input_accom_, input_melody_])
-    x = Dense(melody_feature_length * 2, activation='sigmoid')(x)
-    x = Dense(output_shape)(x)
-    prediction = Activation('softmax')(x)
-    model = Model(inputs=[input_melody, input_accom], outputs=prediction)
-    return model
-
-
-def get_complex_model(input_shape_melody, input_shape_accom, output_shape):
-    note_length = input_shape_melody[1]
-
-    def get_melody_feature(main_melody):
-        # Dense Attention or Conv?
-        mask = Conv1D(filters=input_shape_melody[1], kernel_size=32,
-                      padding='same', activation='sigmoid', strides=1, dilation_rate=4)(main_melody)
-        # x = merge([main_melody, mask], output_shape=input_shape_melody[0], name='attention_mul', mode='mul')
-        x = multiply([main_melody, mask], name='attention_mul')
-        x = LocallyConnected1D(filters=16, kernel_size=32, padding='valid', activation='sigmoid', strides=1)(x)
-        x = Conv1D(filters=32, kernel_size=32, padding='same', activation='sigmoid', strides=1, dilation_rate=2)(x)
-        x = Conv1D(filters=64, kernel_size=32, padding='same', activation='sigmoid', strides=1, dilation_rate=2)(x)
-        x = GlobalMaxPooling1D()(x)
-        x = Dense(melody_feature_length, activation='sigmoid')(x)
-        return x
-
-    def get_current_melody_feature(before_accom, current_melody):
-        before_accom = Conv1D(filters=32, kernel_size=4, padding='same', activation='relu', strides=1)(before_accom)
-        before_accom = GlobalMaxPooling1D()(before_accom)
-
-        current_melody = Conv1D(filters=16, kernel_size=8, padding='same', activation='relu', strides=1)(current_melody)
-        current_melody = Conv1D(filters=32, kernel_size=4, padding='same', activation='relu', strides=1)(current_melody)
-        current_melody = GlobalMaxPooling1D()(current_melody)
-
-        x = concatenate([before_accom, current_melody])
-        x = Dense(melody_feature_length, activation='sigmoid')(x)
-        return x
-
-    input_melody = Input(shape=input_shape_melody)
-    input_accom = Input(shape=input_shape_accom)
-
-    # TODO part of the input_melody
-    # import ipdb; ipdb.set_trace()
-    input_accom_ = get_current_melody_feature(input_accom, input_melody)
-    input_melody_ = get_melody_feature(input_melody)
-
-    x = concatenate([input_accom_, input_melody_])
-    x = Dense(melody_feature_length * 2, activation='sigmoid')(x)
-    x = Dense(output_shape)(x)
-    prediction = Activation('softmax')(x)
-    model = Model(inputs=[input_melody, input_accom], outputs=prediction)
-    return model
-
-
-def get_complex_model_resNet_melody(input_shape_melody, input_shape_accom, output_shape):
-    note_length = input_shape_melody[1]
-
-    def get_melody_feature(main_melody):
-       return get_conv1d_resnet(input_shape_melody, melody_feature_length, input_tensor=main_melody)
-
-    def get_current_melody_feature(before_accom, current_melody):
-        before_accom = Conv1D(filters=32, kernel_size=4, padding='same', activation='relu', strides=1)(before_accom)
-        before_accom = GlobalMaxPooling1D()(before_accom)
-
-        current_melody = Conv1D(filters=16, kernel_size=8, padding='same', activation='relu', strides=1)(current_melody)
-        current_melody = Conv1D(filters=32, kernel_size=4, padding='same', activation='relu', strides=1)(current_melody)
-        current_melody = GlobalMaxPooling1D()(current_melody)
-
-        x = concatenate([before_accom, current_melody])
-        x = Dense(melody_feature_length, activation='sigmoid')(x)
-        return x
-
-    input_melody = Input(shape=input_shape_melody)
-    input_accom = Input(shape=input_shape_accom)
-
-    # TODO part of the input_melody
-    input_accom_ = get_current_melody_feature(input_accom, input_melody)
-    input_melody_ = get_melody_feature(input_melody)
-
-    x = concatenate([input_accom_, input_melody_])
-    x = Dense(melody_feature_length * 2, activation='sigmoid')(x)
-    x = Dense(output_shape)(x)
-    prediction = Activation('softmax')(x)
-    model = Model(inputs=[input_melody, input_accom], outputs=prediction)
-    return model
-
-
 ### Final
 def get_conv1d_model_old(input_shape, output_shape):
     inputs = Input(shape=input_shape)
@@ -156,23 +36,64 @@ def get_conv1d_model_old(input_shape, output_shape):
     model = Model(inputs=inputs, outputs=predictions)
     return model
 
+first_conv = False
 
-def get_conv1d_model(input_shape, output_shape):
+def get_conv1d_model_a(input_shape, output_shape):
     inputs = Input(shape=input_shape)
     xxx = inputs
+    if(first_conv):
+        xxx = Conv1D(filters=s_filter_num, kernel_size=m_filter_size, padding='same', activation=default_activation,
+                     strides=1, dilation_rate=1)(xxx)
 
-    xxx = Conv1D(filters=s_filter_num, kernel_size=s_filter_size, padding='same', activation=default_activation,
+
+    xxx = LocallyConnected1D(filters=s_filter_num, kernel_size=s_filter_size, padding='valid', activation=default_activation,
+                 strides=1)(xxx)
+    xxx = BatchNormalization()(xxx)
+    xxx = LocallyConnected1D(filters=l_filter_num, kernel_size=s_filter_num, padding='valid',
+                             activation=default_activation, strides=1)(xxx)
+    xxx = LocallyConnected1D(filters=xl_filter_num, kernel_size=m_filter_num, padding='valid',
+                             activation=default_activation, strides=1)(xxx)
+    xxx = BatchNormalization()(xxx)
+    xxx = GlobalMaxPooling1D()(xxx)
+    xxx = Dense(output_shape)(xxx)
+    predictions = Activation('softmax')(xxx)
+    model = Model(inputs=inputs, outputs=predictions)
+    return model
+
+def get_conv1d_model_b(input_shape, output_shape):
+    inputs = Input(shape=input_shape)
+    xxx = inputs
+    if (first_conv):
+        xxx = Conv1D(filters=s_filter_num, kernel_size=m_filter_size, padding='same', activation=default_activation,
+                     strides=1, dilation_rate=1)(xxx)
+
+    xxx = LocallyConnected1D(filters=s_filter_num, kernel_size=s_filter_size, padding='valid', activation=default_activation,
+                 strides=1)(xxx)
+    xxx = BatchNormalization()(xxx)
+    xxx = Conv1D(filters=l_filter_num, kernel_size=s_filter_num, padding='valid',
+                             activation=default_activation, strides=1)(xxx)
+    xxx = Conv1D(filters=xl_filter_num, kernel_size=m_filter_num, padding='valid',
+                             activation=default_activation, strides=1)(xxx)
+    xxx = BatchNormalization()(xxx)
+    # xxx = Activation(default_activation)(xxx)
+    # we use max pooling:
+    xxx = GlobalMaxPooling1D()(xxx)
+    xxx = Dense(output_shape)(xxx)
+    predictions = Activation('softmax')(xxx)
+    model = Model(inputs=inputs, outputs=predictions)
+    return model
+
+def get_conv1d_model_c(input_shape, output_shape):
+    inputs = Input(shape=input_shape)
+    xxx = inputs
+    if (first_conv):
+        xxx = Conv1D(filters=s_filter_num, kernel_size=m_filter_size, padding='same', activation=default_activation,
+                     strides=1, dilation_rate=1)(xxx)
+
+    xxx = Conv1D(filters=s_filter_num, kernel_size=s_filter_size, padding='valid', activation=default_activation,
                  strides=1, dilation_rate=1)(xxx)
     xxx = BatchNormalization()(xxx)
-    res_x = xxx
-    xxx = Conv1D(filters=s_filter_num, kernel_size=s_filter_size, padding='same', activation=default_activation,
-                 strides=1, dilation_rate=2)(xxx)
-    xxx = BatchNormalization()(xxx)
-    xxx = Conv1D(filters=s_filter_num, kernel_size=s_filter_num, padding='same', activation=default_activation,
-                 strides=1, dilation_rate=4)(xxx)
-    xxx = BatchNormalization()(xxx)
-    keras.layers.add([xxx, res_x])
-    xxx = LocallyConnected1D(filters=l_filter_num, kernel_size=s_filter_num, padding='valid',
+    xxx = Conv1D(filters=l_filter_num, kernel_size=s_filter_num, padding='valid',
                              activation=default_activation, strides=1)(xxx)
     xxx = LocallyConnected1D(filters=xl_filter_num, kernel_size=m_filter_num, padding='valid',
                              activation=default_activation, strides=1)(xxx)
@@ -184,6 +105,76 @@ def get_conv1d_model(input_shape, output_shape):
     predictions = Activation('softmax')(xxx)
     model = Model(inputs=inputs, outputs=predictions)
     return model
+
+def get_conv1d_model_b_small(input_shape, output_shape):
+    inputs = Input(shape=input_shape)
+    xxx = inputs
+    if (first_conv):
+        xxx = Conv1D(filters=s_filter_num, kernel_size=m_filter_size, padding='same', activation=default_activation,
+                     strides=1, dilation_rate=1)(xxx)
+
+    xxx = LocallyConnected1D(filters=s_filter_num, kernel_size=s_filter_size, padding='valid', activation=default_activation,
+                 strides=1)(xxx)
+    xxx = BatchNormalization()(xxx)
+    xxx = Conv1D(filters=l_filter_num, kernel_size=s_filter_num, padding='valid',
+                             activation=default_activation, strides=1)(xxx)
+    xxx = Conv1D(filters=xl_filter_num, kernel_size=m_filter_num, padding='valid',
+                             activation=default_activation, strides=1)(xxx)
+    xxx = BatchNormalization()(xxx)
+    # xxx = Activation(default_activation)(xxx)
+    # we use max pooling:
+    xxx = GlobalMaxPooling1D()(xxx)
+    xxx = Dense(output_shape)(xxx)
+    predictions = Activation('softmax')(xxx)
+    model = Model(inputs=inputs, outputs=predictions)
+    return model
+
+def get_conv1d_model_naive_big(input_shape, output_shape):
+    inputs = Input(shape=input_shape)
+    xxx = inputs
+    if (first_conv):
+        xxx = Conv1D(filters=s_filter_num, kernel_size=m_filter_size, padding='same', activation=default_activation,
+                     strides=1, dilation_rate=1)(xxx)
+
+    xxx = Conv1D(filters=xl_filter_num, kernel_size=s_filter_size, padding='valid', activation=default_activation,
+                 strides=1)(xxx)
+    xxx = BatchNormalization()(xxx)
+    xxx = Conv1D(filters=xl_filter_num, kernel_size=s_filter_num, padding='valid',
+                             activation=default_activation, strides=1)(xxx)
+    xxx = Conv1D(filters=117, kernel_size=m_filter_num, padding='valid',
+                             activation=default_activation, strides=1)(xxx)
+    xxx = BatchNormalization()(xxx)
+    # xxx = Activation(default_activation)(xxx)
+    # we use max pooling:
+    xxx = GlobalMaxPooling1D()(xxx)
+    xxx = Dense(output_shape)(xxx)
+    predictions = Activation('softmax')(xxx)
+    model = Model(inputs=inputs, outputs=predictions)
+    return model
+
+def get_conv1d_model_naive(input_shape, output_shape):
+    inputs = Input(shape=input_shape)
+    xxx = inputs
+    if (first_conv):
+        xxx = Conv1D(filters=s_filter_num, kernel_size=m_filter_size, padding='same', activation=default_activation,
+                     strides=1, dilation_rate=1)(xxx)
+
+    xxx = Conv1D(filters=s_filter_num, kernel_size=s_filter_size, padding='valid', activation=default_activation,
+                 strides=1, dilation_rate=1)(xxx)
+    xxx = BatchNormalization()(xxx)
+    xxx = Conv1D(filters=l_filter_num, kernel_size=s_filter_num, padding='valid',
+                             activation=default_activation, strides=1)(xxx)
+    xxx = Conv1D(filters=xl_filter_num, kernel_size=m_filter_num, padding='valid',
+                             activation=default_activation, strides=1)(xxx)
+    xxx = BatchNormalization()(xxx)
+    # xxx = Activation(default_activation)(xxx)
+    # we use max pooling:
+    xxx = GlobalMaxPooling1D()(xxx)
+    xxx = Dense(output_shape)(xxx)
+    predictions = Activation('softmax')(xxx)
+    model = Model(inputs=inputs, outputs=predictions)
+    return model
+
 
 def get_two_pipeline_model(input_shape, output_shape, input_unit_length=16):
     def get_melody_feature(main_melody):
@@ -222,35 +213,6 @@ def get_two_pipeline_model(input_shape, output_shape, input_unit_length=16):
     prediction = Activation('softmax')(x)
 
     model = Model(inputs=[input_melody, input_accom], outputs=prediction)
-    return model
-
-
-def get_conv1d_model_naive(input_shape, output_shape):
-    inputs = Input(shape=input_shape)
-    xxx = inputs
-
-    xxx = Conv1D(filters=s_filter_num, kernel_size=s_filter_size, padding='same', activation=default_activation,
-                 strides=1, dilation_rate=1)(xxx)
-    xxx = BatchNormalization()(xxx)
-    res_x = xxx
-    xxx = Conv1D(filters=s_filter_num, kernel_size=s_filter_size, padding='same', activation=default_activation,
-                 strides=1, dilation_rate=2)(xxx)
-    xxx = BatchNormalization()(xxx)
-    xxx = Conv1D(filters=s_filter_num, kernel_size=s_filter_num, padding='same', activation=default_activation,
-                 strides=1, dilation_rate=4)(xxx)
-    xxx = BatchNormalization()(xxx)
-    keras.layers.add([xxx, res_x])
-    xxx = Conv1D(filters=l_filter_num, kernel_size=s_filter_num, padding='valid',
-                             activation=default_activation, strides=1)(xxx)
-    xxx = Conv1D(filters=xl_filter_num, kernel_size=m_filter_num, padding='valid',
-                             activation=default_activation, strides=1)(xxx)
-    xxx = BatchNormalization()(xxx)
-    # xxx = Activation(default_activation)(xxx)
-    # we use max pooling:
-    xxx = GlobalMaxPooling1D()(xxx)
-    xxx = Dense(output_shape)(xxx)
-    predictions = Activation('softmax')(xxx)
-    model = Model(inputs=inputs, outputs=predictions)
     return model
 
 def get_lstm_model(input_shape, output_shape, LayerSize=512):

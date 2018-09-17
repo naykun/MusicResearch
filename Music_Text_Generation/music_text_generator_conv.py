@@ -46,10 +46,10 @@ from ConvOtherStructureModel import *
 
 
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_integer('batch_size', 1024, 'LSTM Layer Units Number')
+tf.app.flags.DEFINE_integer('batch_size', 512, 'LSTM Layer Units Number')
 tf.app.flags.DEFINE_integer('epochs', 150, 'Total epochs')
 tf.app.flags.DEFINE_integer('maxlen', 64, 'Max length of a sentence')
-tf.app.flags.DEFINE_integer('generate_length', 400, 'Number of steps of generated music')
+tf.app.flags.DEFINE_integer('generate_length', 3200, 'Number of steps of generated music')
 tf.app.flags.DEFINE_integer('units', 64, 'LSTM Layer Units Number')
 tf.app.flags.DEFINE_integer('dense_size', 0, 'Dense Layer Size')
 tf.app.flags.DEFINE_integer('step', 1, 'Step length when building dataset')
@@ -76,7 +76,7 @@ dataset_dir = FLAGS.dataset_dir
 
 date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
 
-exp_name = "resNet101_%s_batchS%d_epochs%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
+exp_name = "B_3LayerCNN_Local2_%s_batchS%d_epochs%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
                                                                         batch_size, epochs, maxlen, step,
                                                                         embedding_length, date_and_time)
 
@@ -87,7 +87,14 @@ exp_name = "resNet101_%s_batchS%d_epochs%d_maxL%d_step%d_embeddingL%d_%s" % (dat
 # model = get_resNet_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = resnet_v1_110(input_shape=train_input_shape,output_shape = train_output_shape)
-get_model_fn = resnet_v1_110
+# get_model_fn = resnet_v1_110
+# get_model_fn = get_conv1d_model_old
+
+# get_model_fn = get_conv1d_model_b_small
+
+# get_model_fn = get_conv1d_model_naive_big
+get_model_fn = get_conv1d_model_b
+# get_model_fn = get_conv1d_model_naive
 
 # In[ ]:
 
@@ -132,8 +139,8 @@ def text_to_events(str):
 
 
 
-
-log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/9_1_AAAI_single_multi_track/multi_track_bach_2lr'
+# 9_16
+log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/9_16/single_track_Wiki'
 log_dir = os.path.join(log_root, "logdir", exp_name)
 TB_log_dir = os.path.join(log_root, 'TB_logdir', exp_name)
 console_log_dir = os.path.join(log_root, log_dir, "console")
@@ -208,7 +215,7 @@ def print_fn(str):
 
 def lr_schedule(epoch):
     #Learning Rate Schedule
-    lr = 1e-3
+    lr = 1e-2
     if epoch >= epochs * 0.9:
         lr *= 0.5e-3
     elif epoch >= epochs * 0.8:
@@ -237,6 +244,7 @@ print('x_train.shape', x_train.shape)
 print('y_train.shape', y_train.shape)
 
 
+# model = get_model_fn(input_shape=train_input_shape,output_shape = train_output_shape, local_conv = False)
 model = get_model_fn(input_shape=train_input_shape,output_shape = train_output_shape)
 
 def perplexity(y_trues, y_preds):
@@ -357,7 +365,7 @@ def generate_more_midi(id, text, diversity, start_index, eval_input = False):
     generated += sentence
     print_fn('----- Generating with seed: "' + sentence + '"')
     sys.stdout.write(generated)
-    generate_length = 3200
+    # generate_length = 3200
     for i in range(generate_length):
         x_pred = np.zeros((1, maxlen, len(chars) * embedding_length))
         for t, char in enumerate(sentence):

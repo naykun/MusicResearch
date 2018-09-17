@@ -57,7 +57,7 @@ dataset_dir = FLAGS.dataset_dir
 
 date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
 
-exp_name = "CNN_Local_%s_batchS%d_epochs%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
+exp_name = "B_3Layer_%s_batchS%d_epochs%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
                                                                         batch_size, epochs, maxlen, step,
                                                                         embedding_length, date_and_time)
 from ConvModel import *
@@ -72,13 +72,19 @@ from keras import backend as K
 # model = get_resNet_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = resnet_v1_110(input_shape=train_input_shape,output_shape = train_output_shape)
-get_model_fn = get_conv1d_model
+# get_model_fn = get_conv1d_model_b_small
+
+# get_model_fn = get_conv1d_model_naive_big
+get_model_fn = get_conv1d_model_b
+# get_model_fn = get_conv1d_model_naive
+
+# get_model_fn = get_conv1d_model
 
 vector_dim = 259
 # train_dataset_path = os.path.join(dataset_dir, dataset_name+'_train.pkl')
 # eval_dataset_path = os.path.join(dataset_dir, dataset_name+'_eval.pkl')
-train_dataset_path = '/home/ouyangzhihao/sss/AAAI/common/Mag_Data/Poly_List_Datasets/new_data/Bach_new_train.pkl'
-eval_dataset_path = '/home/ouyangzhihao/sss/AAAI/common/Mag_Data/Poly_List_Datasets/new_data/Bach_new_eval.pkl'
+train_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_train.pkl'
+eval_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_eval.pkl'
 
 with open(train_dataset_path, "rb") as train_file:
     train_data = pkl.load(train_file)
@@ -114,7 +120,7 @@ print('Eval dataset shape:', eval_data.shape)
 # eval_data = eval_data[0:2000]
 
 # In[6]:
-log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/9_1_AAAI_single_multi_track/multi_track_bach_lr2'
+log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/9_16/multi_track_bach'
 log_dir = os.path.join(log_root, "logdir", exp_name)
 TB_log_dir = os.path.join(log_root, 'TB_logdir', exp_name)
 console_log_dir = os.path.join(log_root, log_dir, "console")
@@ -166,15 +172,15 @@ def get_embedded_data(data, maxlen, embedding_length):
 
 # In[7]:
 
-train_data = train_data[:int(len(train_data)/1)]
-eval_data = eval_data[:int(len(eval_data)/1)]
+train_data = train_data[:int(len(train_data))]
+eval_data = eval_data[:int(len(eval_data))]
 
 print('Vectorization...')
 x_train, y_train = get_embedded_data(train_data, maxlen, embedding_length)
 x_eval, y_eval = get_embedded_data(eval_data, maxlen, embedding_length)
 
 # In[8]:
-import ipdb; ipdb.set_trace()
+
 
 def print_fn(str):
     print(str)
@@ -250,12 +256,12 @@ def generate_music(epoch, data, diversity, start_index, is_train=False):
 
     for i in range(generate_length):
         x_pred = np.zeros((1, maxlen, 259 * embedding_length))
-        # for t, event in enumerate(events):
+        for t, event in enumerate(events):
         #     # for idx in range(embedding_length):
         #
         #     print("debug:", t, event % 259)
         #
-        #     x_pred[0, t, event % 259] = 1.
+            x_pred[0, t, event % 259] = 1.
 
         preds = model.predict(x_pred, verbose=0)[0]
         next_index = sample(preds, diversity)
@@ -307,9 +313,11 @@ def generate_more_midi(id, data, diversity, start_index, eval_input=False):
     print(generated)
 
     generated = list(generated)
-    generate_length = 3200
+    # generate_length = 3200
     for i in range(generate_length):
         x_pred = np.zeros((1, maxlen, 259 * embedding_length))
+        for t, event in enumerate(events):
+            x_pred[0, t, event % 259] = 1.
         preds = model.predict(x_pred, verbose=0)[0]
         next_index = sample(preds, diversity)
         next_event = int(next_index)
@@ -429,7 +437,7 @@ print(max_acc_log_line, file=open(max_acc_log_path, 'a'))
 rlaunch --cpu=4 --gpu=1 --memory=16000 --preemptible=no bash
 
 
-python3 polyphony_train_conv.py --batch_size=512 \
+python3 polyphony_train.py --batch_size=512 \
     --epochs=20 \
     --units=512 \
     --maxlen=16 \

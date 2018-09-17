@@ -31,7 +31,7 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_integer('batch_size', 128, 'LSTM Layer Units Number')
 tf.app.flags.DEFINE_integer('epochs', 150, 'Total epochs')
 tf.app.flags.DEFINE_integer('maxlen', 256, 'Max length of a sentence')
-tf.app.flags.DEFINE_integer('generate_length', 3200, 'Number of steps of generated music')
+tf.app.flags.DEFINE_integer('generate_length', 7200, 'Number of steps of generated music')
 tf.app.flags.DEFINE_integer('units', 512, 'LSTM Layer Units Number')
 tf.app.flags.DEFINE_integer('dense_size', 0, 'Dense Layer Size')
 tf.app.flags.DEFINE_integer('step', 128, 'Step length when building dataset')
@@ -106,8 +106,13 @@ print('Eval dataset shape:', eval_data.shape)
 # eval_data = eval_data[0:2000]
 
 # In[6]:
-log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/9_1_AAAI_single_multi_track/multi_track_bach'
-exp_name = 'LSTM512_Bach_batchS128_epochs150_maxL256_step128_embeddingL1_2018-09-01_233321'
+log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/9_1_AAAI_single_multi_track/multi_track_bach_finish'
+# exp_name = 'LSTM512_Bach_batchS128_epochs150_maxL256_step128_embeddingL1_2018-09-02_090518'
+exp_name = 'resNet_Local_Bach_batchS128_epochs150_maxL256_step128_embeddingL1_2018-09-02_090538'
+# exp_name = 'resNet_Naive_Bach_batchS128_epochs150_maxL256_step128_embeddingL1_2018-09-02_090552'
+# exp_name = 'CNN_Local_Bach_batchS128_epochs150_maxL256_step128_embeddingL1_2018-09-02_090627'
+# exp_name = 'CNN_Naive_Bach_batchS128_epochs150_maxL256_step128_embeddingL1_2018-09-02_090613'
+# exp_name = 'resNet101_Bach_batchS128_epochs150_maxL256_step128_embeddingL1_2018-09-02_090505'
 
 # model = get_conv1d_model_naive(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
@@ -115,7 +120,7 @@ exp_name = 'LSTM512_Bach_batchS128_epochs150_maxL256_step128_embeddingL1_2018-09
 # model = get_resNet_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = resnet_v1_110(input_shape=train_input_shape,output_shape = train_output_shape)
-get_model_fn = get_lstm_model
+get_model_fn = get_resNet_model
 
 
 log_dir = os.path.join(log_root, "logdir", exp_name)
@@ -125,7 +130,7 @@ model_log_dir = os.path.join(log_root, 'Model_logdir', exp_name)
 data_log_dir = os.path.join(log_root, log_dir, "data")
 midi_log_dir = os.path.join(log_root, log_dir, "midi")
 midi_log_dir_more = os.path.join(log_root, log_dir, "midi_more")
-midi_log_dir_more = os.path.join(midi_log_dir_more,'anothermore')
+midi_log_dir_more = os.path.join(midi_log_dir_more,'8_5_superlong')
 
 
 def make_log_dirs(dirs):
@@ -175,9 +180,10 @@ def get_embedded_data(data, maxlen, embedding_length):
 # eval_data = eval_data[:int(len(eval_data)/100)]
 
 print('Vectorization...')
+start_time = time.time()
 x_train, y_train = get_embedded_data(train_data, maxlen, embedding_length)
 x_eval, y_eval = get_embedded_data(eval_data, maxlen, embedding_length)
-
+print('Vec time:', time.time() - start_time)
 # In[8]:
 
 
@@ -255,12 +261,12 @@ def generate_music(epoch, data, diversity, start_index, is_train=False):
 
     for i in range(generate_length):
         x_pred = np.zeros((1, maxlen, 259 * embedding_length))
-        # for t, event in enumerate(events):
-        #     # for idx in range(embedding_length):
+        for t, event in enumerate(events):
+            for idx in range(embedding_length):
         #
         #     print("debug:", t, event % 259)
         #
-        #     x_pred[0, t, event % 259] = 1.
+                x_pred[0, t, event % 259] = 1.
 
         preds = model.predict(x_pred, verbose=0)[0]
         next_index = sample(preds, diversity)
@@ -282,8 +288,8 @@ def generate_music(epoch, data, diversity, start_index, is_train=False):
             log_name = "epoch%d_random_diversity%02d" % (epoch + 1, int(diversity * 10))
 
 
-    # generated = list(generated)
-    generated += [1]
+    generated = list(generated)
+    # generated += [1]
 
     data_log_path = os.path.join(data_log_dir, log_name + ".pkl")
     with open(data_log_path, "wb") as data_log_file:
@@ -312,9 +318,14 @@ def generate_more_midi(id, data, diversity, start_index, eval_input=False):
     print(generated)
 
     generated = list(generated)
-    generate_length = 3200
+    # generate_length = 32000
+    print(generate_length)
+
     for i in range(generate_length):
+
         x_pred = np.zeros((1, maxlen, 259 * embedding_length))
+        for t, event in enumerate(events):
+            x_pred[0, t, event % 259] = 1.
         preds = model.predict(x_pred, verbose=0)[0]
         next_index = sample(preds, diversity)
         next_event = int(next_index)
@@ -332,13 +343,14 @@ def generate_more_midi(id, data, diversity, start_index, eval_input=False):
 
     # generated = list(generated)
     generated += [1]
-
-    data_log_path = os.path.join(data_log_dir, log_name + ".pkl")
-    with open(data_log_path, "wb") as data_log_file:
-        data_log_file.write(pkl.dumps(generated) )
-        data_log_file.close()
-
-    print_fn("Write %s.pkl to %s" % (log_name, data_log_dir))
+    print(len(generated))
+    print(len(generated)/16)
+    # data_log_path = os.path.join(data_log_dir, log_name + ".pkl")
+    # with open(data_log_path, "wb") as data_log_file:
+    #     data_log_file.write(pkl.dumps(generated) )
+    #     data_log_file.close()
+    #
+    # print_fn("Write %s.pkl to %s" % (log_name, data_log_dir))
 
     list_to_midi(generated, 120, midi_log_dir_more, log_name)
 
@@ -346,10 +358,10 @@ def generate_more_midi(id, data, diversity, start_index, eval_input=False):
 
 
 
-for i in range(10):
+for i in range(3):
     start_index = random.randint(0, len(train_data) - maxlen - 1)
     generate_more_midi(i,train_data,diversity=0.2,start_index=start_index)
-for i in range(10):
+for i in range(3):
     start_index = random.randint(0, len(eval_data) - maxlen - 1)
     generate_more_midi(i, eval_data, diversity=0.2, start_index=start_index, eval_input = True)
 

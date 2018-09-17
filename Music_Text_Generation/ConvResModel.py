@@ -384,13 +384,15 @@ def resnet_layer_local(inputs,
 
 ##TODO
 ### Accuracy :22epoch 99%, max acc : 0.9997593572988782,  weights num: 2,336,932
-def resnet_v1_110(input_shape, output_shape, depth=18 * 6 + 2):
+def resnet_v1_110(input_shape, output_shape, depth=18 * 6 + 2, local_conv = True):
     if (depth - 2) % 6 != 0:
         raise ValueError('depth should be 6n+2 (eg 20, 32, 44 in [a])')
     # Start model definition.
     num_filters = 16
     num_res_blocks = int((depth - 2) / 6)
 
+    if(local_conv == False):
+        resnet_layer_local = resnet_layer_naive
     resnet_layer = resnet_layer_naive
     
     inputs = Input(shape=input_shape)
@@ -441,3 +443,5 @@ def resnet_v1_110(input_shape, output_shape, depth=18 * 6 + 2):
     # Instantiate model.
     model = Model(inputs=inputs, outputs=outputs)
     return model
+
+
