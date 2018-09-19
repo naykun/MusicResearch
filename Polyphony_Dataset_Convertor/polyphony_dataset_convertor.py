@@ -111,6 +111,9 @@ def list_to_midi(events, qpm, output_dir, midi_name):
     for event in poly_events:
         poly_seq.append(event)
 
+    print(len(poly_events))
+    print(len(poly_seq))
+    # import ipdb; ipdb.set_trace()
     poly_seq_ns = poly_seq.to_sequence(qpm=qpm)
     
     midi_path = os.path.join(output_dir, midi_name+'.mid')
