@@ -24,7 +24,7 @@ from magenta.protobuf import generator_pb2
 from magenta.protobuf import music_pb2
 
 import magenta.music as mm
-
+import numpy as np
 
 # In[ ]:
 
@@ -120,6 +120,72 @@ def list_to_midi(events, qpm, output_dir, midi_name):
 
 
 
+
+# polyphony sequence example to list pkl
+# poly_S_E_path = '/home/ouyangzhihao/sss/AAAI/common/Mag_Data/poly_midi_S_E/Wikiofnia/training_poly_tracks.tfrecord'
+# polyphony_sequence_example_to_list_pkl(poly_S_E_path, '/home/ouyangzhihao/sss/AAAI/common/Mag_Data/Poly_List_Datasets/Wikifonia', 'Wikifonia_poly_train')
+
+dataset_dir = '/home/ouyangzhihao/sss/AAAI/common/Mag_Data/Poly_List_Datasets/Wikifonia'
+dataset_name = 'Wikifonia'
+train_dataset_path = os.path.join(dataset_dir, dataset_name + '_train.pkl')
+eval_dataset_path = os.path.join(dataset_dir, dataset_name + '_eval.pkl')
+
+dataset_new_name = 'Wikifonia_new'
+train_dataset_new_path = os.path.join(dataset_dir, dataset_new_name + '_train.pkl')
+eval_dataset_new_path = os.path.join(dataset_dir, dataset_new_name + '_eval.pkl')
+
+with open(train_dataset_path, "rb") as train_file:
+    train_data = pkl.load(train_file)
+    temp = []
+
+    temp = np.concatenate(train_data)
+
+    temp = temp[temp != 0]
+    temp = temp[temp != 1]
+
+    # print(temp[0])
+    # print(temp[0:100])
+
+    # temp = temp[temp != 0 and temp != 1]
+
+    '''
+    for i in train_data:
+        cnt += 1
+        print(cnt)
+        temp = temp + i[1:len(i) - 1]
+    '''
+    with open(train_dataset_new_path, 'wb') as wf:  # pickle只能以二进制格式存储数据到文件
+        wf.write(pkl.dumps(temp))  # dumps序列化源数据后写入文件
+        wf.close()
+
+    train_data = np.array(temp)
+    train_file.close()
+
+print('Train dataset shape:', train_data.shape)
+
+with open(eval_dataset_path, "rb") as eval_file:
+    eval_data = pkl.load(eval_file)
+    temp = []
+
+    temp = np.concatenate(eval_data)
+
+    temp = temp[temp != 0]
+    temp = temp[temp != 1]
+
+    '''
+    for i in eval_data:
+        temp = temp + i[1:len(i) - 1]
+    '''
+
+    with open(eval_dataset_new_path, 'wb') as wf:  # pickle只能以二进制格式存储数据到文件
+        wf.write(pkl.dumps(temp))  # dumps序列化源数据后写入文件
+        wf.close()
+
+    eval_data = np.array(temp)
+    eval_file.close()
+
+print('Eval dataset shape:', eval_data.shape)
+
 '''
 # how to use
 
@@ -149,5 +215,11 @@ with open(test_list_path, 'rb') as tl_file:
 
 for i in range(10):
     list_to_midi(test_list[i], 120, '/Users/mac/Desktop/test', 'test_pkl_to_midi%d'%i)
+
+'''
+
+'''
+
+~/sss/AAAI/common/Mag_Data/midi_tf/notesequences_midishare_Wikifonia.tfrecord
 
 '''

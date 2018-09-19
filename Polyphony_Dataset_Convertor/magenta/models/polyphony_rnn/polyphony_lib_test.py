@@ -477,6 +477,9 @@ class PolyphonyLibTest(tf.test.TestCase):
     for event in poly_events:
       poly_seq.append(event)
 
+    print("*"*20)
+    print(poly_seq)
+
     self.assertEqual(2, poly_seq.num_steps)
     self.assertListEqual([0, 0, 0, 0, 1, 1, 1, 2], poly_seq.steps)
 
