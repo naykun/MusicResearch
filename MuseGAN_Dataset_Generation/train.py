@@ -55,29 +55,35 @@ exp_name = "%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d_%s"
 # feature
 reshaped_dataset = dataset.reshape((len(dataset), -1, 84, 5))
 
+print("reshaped_dataset:", reshaped_dataset.shape)
+
 feature = []
 label = []
 
 for now_song in reshaped_dataset:
     for i in range(0, len(now_song), step):
+
+        # print("now_song shape:", now_song.shape)
+
         if (i + maxlen + 1) < len(now_song):
             feature.append(now_song[i:i+maxlen])
             label.append(now_song[i+maxlen])
 
 # In[8]:
 
+print("feature shape:", np.array(feature).shape)
 
 # split data to train and validation
-dataset_size = len(dataset)
+feature_size = len(feature)
 val_ratio = 0.1
 
-train_size = int(dataset_size * (1 - val_ratio))
+train_size = int(feature_size * (1 - val_ratio))
 
 x_train = np.array(feature[0:train_size])
 y_train = np.array(label[0:train_size])
 
-x_val = np.array(feature[train_size: dataset_size])
-y_val = np.array(label[train_size: dataset_size])
+x_val = np.array(feature[train_size: feature_size])
+y_val = np.array(label[train_size: feature_size])
 
 
 # In[9]:
