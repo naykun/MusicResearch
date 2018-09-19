@@ -27,13 +27,13 @@ from polyphony_dataset_convertor import *
 
 
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_integer('batch_size', 128, 'LSTM Layer Units Number')
+tf.app.flags.DEFINE_integer('batch_size', 1024, 'LSTM Layer Units Number')
 tf.app.flags.DEFINE_integer('epochs', 150, 'Total epochs')
-tf.app.flags.DEFINE_integer('maxlen', 256, 'Max length of a sentence')
+tf.app.flags.DEFINE_integer('maxlen', 64, 'Max length of a sentence')
 tf.app.flags.DEFINE_integer('generate_length', 3200, 'Number of steps of generated music')
 tf.app.flags.DEFINE_integer('units', 512, 'LSTM Layer Units Number')
 tf.app.flags.DEFINE_integer('dense_size', 0, 'Dense Layer Size')
-tf.app.flags.DEFINE_integer('step', 128, 'Step length when building dataset')
+tf.app.flags.DEFINE_integer('step', 1, 'Step length when building dataset')
 tf.app.flags.DEFINE_integer('embedding_length', 1, 'Embedding length')
 tf.app.flags.DEFINE_string('dataset_name', 'Bach', 'Dataset name will be the prefix of exp_name')
 tf.app.flags.DEFINE_string('dataset_dir', '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
@@ -416,9 +416,9 @@ speed = (time.time() - start_time ) / ( x_train.shape[0] / batch_size )
 
 y_trues = y_train
 
-final_perplexity = get_perplexity(y_trues, y_pred)
-final_cross_entropy = get_cross_entropy(y_trues, y_pred)
-final_accuracy = get_accuracy(y_trues, y_pred)
+final_perplexity = history_callback.history["perplexity"][epochs-1]
+final_accuracy = history_callback.history["acc"][epochs-1]
+final_cross_entropy = history_callback.history["loss"][epochs-1]
 model_size = model.count_params()
 
 
