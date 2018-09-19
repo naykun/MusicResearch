@@ -32,7 +32,7 @@ class PolyphonyOneHotEncodingTest(tf.test.TestCase):
     step_end = PolyphonicEvent(
         event_type=PolyphonicEvent.STEP_END, pitch=0)
     new_note = PolyphonicEvent(
-        event_type=PolyphonicEvent.NEW_NOTE, pitch=0)
+        event_type=PolyphonicEvent.NEW_NOTE, pitch=60)
     continued_note = PolyphonicEvent(
         event_type=PolyphonicEvent.CONTINUED_NOTE, pitch=60)
     continued_max_note = PolyphonicEvent(

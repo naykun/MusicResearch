@@ -47,10 +47,10 @@ from polyphony_dataset_convertor import *
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_integer('batch_size', 1024, 'LSTM Layer Units Number')
-tf.app.flags.DEFINE_integer('epochs', 100, 'Total epochs')
+tf.app.flags.DEFINE_integer('epochs', 5, 'Total epochs')
 tf.app.flags.DEFINE_integer('maxlen', 48, 'Max length of a sentence')
 tf.app.flags.DEFINE_integer('generate_length', 400, 'Number of steps of generated music')
-tf.app.flags.DEFINE_integer('units', 512, 'LSTM Layer Units Number')
+tf.app.flags.DEFINE_integer('units', 128, 'LSTM Layer Units Number')
 tf.app.flags.DEFINE_integer('dense_size', 0, 'Dense Layer Size')
 tf.app.flags.DEFINE_integer('step', 8, 'Step length when building dataset')
 tf.app.flags.DEFINE_integer('embedding_length', 1, 'Embedding length')
@@ -76,7 +76,7 @@ dataset_dir = FLAGS.dataset_dir
 
 date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
 
-exp_name = "LSTM%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
+exp_name = "%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
                                                                         batch_size, epochs, units, dense_size, maxlen, step,
                                                                         embedding_length, date_and_time)
 
@@ -85,8 +85,6 @@ exp_name = "LSTM%s_batchS%d_epochs%d_units%d_denseS%d_maxL%d_step%d_embeddingL%d
 
 train_dataset_path = os.path.join(dataset_dir, dataset_name+'_train.pkl')
 eval_dataset_path = os.path.join(dataset_dir, dataset_name+'_eval.pkl')
-train_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_train.pkl'
-eval_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_eval.pkl'
 
 with open(train_dataset_path, "rb") as train_file:
     train_data = pkl.load(train_file)
@@ -113,18 +111,17 @@ with open(eval_dataset_path, "rb") as eval_file:
 print('Eval dataset shape:', eval_data.shape)
 
 
-# train_data = train_data[0:10000]
-# eval_data = eval_data[0:2000]
+train_data = train_data[0:10000]
+eval_data = eval_data[0:2000]
 
 # In[6]:
 
-log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/8_26_Music'
-log_dir = os.path.join(log_root, "logdir", exp_name)
-TB_log_dir = os.path.join(log_root, 'TB_logdir', exp_name)
-console_log_dir = os.path.join(log_root, log_dir, "console")
-model_log_dir = os.path.join(log_root, 'Model_logdir', exp_name)
-data_log_dir = os.path.join(log_root, log_dir, "data")
-midi_log_dir = os.path.join(log_root, log_dir, "midi")
+log_dir = os.path.join("logdir/", exp_name)
+TB_log_dir = os.path.join('TB_logdir/', exp_name)
+console_log_dir = os.path.join(log_dir, "console")
+model_log_dir = os.path.join('Model_logdir', exp_name)
+data_log_dir = os.path.join(log_dir, "data")
+midi_log_dir = os.path.join(log_dir, "midi")
 
 
 def make_log_dirs(dirs):
@@ -168,8 +165,6 @@ def get_embedded_data(data, maxlen, embedding_length):
 # In[7]:
 
 
-train_data = train_data[:1000]
-eval_data = eval_data[:100]
 
 print('Vectorization...')
 x_train, y_train = get_embedded_data(train_data, maxlen, embedding_length)
@@ -177,11 +172,6 @@ x_eval, y_eval = get_embedded_data(eval_data, maxlen, embedding_length)
 
 # In[8]:
 
-print(np.shape(x_train))
-print(np.shape(y_train))
-print(np.shape(x_train[0]))
-print(np.shape(y_train[0]))
-import ipdb; ipdb.set_trace()
 
 def print_fn(str):
     print(str)
@@ -192,7 +182,7 @@ def print_fn(str):
 def lr_schedule(epoch):
     # Learning Rate Schedule
 
-    lr = 1e-2
+    lr = 1e-1
     if epoch >= epochs * 0.9:
         lr *= 0.5e-3
     elif epoch >= epochs * 0.8:
@@ -400,15 +390,15 @@ rlaunch --cpu=4 --gpu=1 --memory=16000 --preemptible=no bash
 
 
 python3 polyphony_train.py --batch_size=512 \
-    --epochs=20 \
+    --epochs=5 \
     --units=512 \
     --maxlen=16 \
-    --generate_length=400 \
+    --generate_length=4000 \
     --dense_size=0 \
     --step=1 \
     --embedding_length=1 \
     --dataset_name=Bach_new \
-    --dataset_dir=datasets/Bach/
+    --dataset_dir=/home/ouyangzhihao/sss/AAAI/common/Mag_Data/Poly_List_Datasets/new_data
 
 
 

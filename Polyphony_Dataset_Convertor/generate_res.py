@@ -69,8 +69,8 @@ from keras import backend as K
 vector_dim = 259
 # train_dataset_path = os.path.join(dataset_dir, dataset_name+'_train.pkl')
 # eval_dataset_path = os.path.join(dataset_dir, dataset_name+'_eval.pkl')
-train_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_train.pkl'
-eval_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_eval.pkl'
+train_dataset_path = '/home/ouyangzhihao/sss/AAAI/common/Mag_Data/Poly_List_Datasets/new_data/Bach_new_train.pkl'
+eval_dataset_path = '/home/ouyangzhihao/sss/AAAI/common/Mag_Data/Poly_List_Datasets/new_data/Bach_new_eval.pkl'
 
 with open(train_dataset_path, "rb") as train_file:
     train_data = pkl.load(train_file)
@@ -275,7 +275,7 @@ def generate_music(epoch, data, diversity, start_index, is_train=False):
         generated.append(next_event)
         events = events[1:] + [next_event]
 
-        # print(next_event, end=',')
+        print(next_event, end=',')
 
     # print('')
 
