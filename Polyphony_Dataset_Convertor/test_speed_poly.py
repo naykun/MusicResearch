@@ -78,11 +78,11 @@ if(len(sys.argv)!=1):
         name_suffix = 'C'
         get_model_fn = get_conv1d_model_c
     if (order == 3):
-        name_suffix = 'Naive'
-        get_model_fn = get_conv1d_model_naive
-    if (order == 4):
         name_suffix = 'NaiveBig'
         get_model_fn = get_conv1d_model_naive_big
+    if (order == 4):
+        name_suffix = 'Naive'
+        get_model_fn = get_conv1d_model_naive
     if (order == 5):
         name_suffix = 'resNetNaive'
         get_model_fn = get_resnet_model_naive
@@ -92,24 +92,26 @@ if(len(sys.argv)!=1):
     if (order == 7):
         name_suffix = 'LSTM'
         get_model_fn = get_lstm_model
-# model = get_conv1d_model_naive(input_shape=train_input_shape,output_shape = train_output_shape)
-# model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
-# model = get_resnet_model_naive(input_shape=train_input_shape,output_shape = train_output_shape)
-# model = get_resNet_model(input_shape=train_input_shape,output_shape = train_output_shape)
-# get_model_fn = get_lstm_model
-# model = resnet_v1_110(input_shape=train_input_shape,output_shape = train_output_shape)
-# get_model_fn = get_conv1d_model_b_small
 
-# get_model_fn = get_conv1d_model_naive_big
-# get_model_fn = get_conv1d_model_b
-# get_model_fn = get_conv1d_model_naive
+# In[6]:
+log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/9_16/multi_track_bach'
 
-# get_model_fn = get_conv1d_model
-# get_model_fn = get_resNet_model
-# name_suffix = 'resNetLocal'
-exp_name = name_suffix + "_3Layer_%s_batchS%d_epochs%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
-                                                                        batch_size, epochs, maxlen, step,
-                                                                        embedding_length, date_and_time)
+model_log_root = os.path.join(log_root,'Model_logdir')
+for file in os.listdir(model_log_root):
+    target_model = os.path.join(model_log_root,'epoch150.h5')
+    if(file.split('_')[0] == name_suffix):
+        exp_name = file
+        print('Get exp_name:', exp_name)
+
+log_dir = os.path.join(log_root, "logdir", exp_name)
+TB_log_dir = os.path.join(log_root, 'TB_logdir', exp_name)
+console_log_dir = os.path.join(log_root, log_dir, "console")
+model_log_dir = os.path.join(log_root, 'Model_logdir', exp_name, 'epoch150.h5')
+data_log_dir = os.path.join(log_root, log_dir, "data")
+midi_log_dir = os.path.join(log_root, log_dir, "midi")
+
+
+
 vector_dim = 259
 # train_dataset_path = os.path.join(dataset_dir, dataset_name+'_train.pkl')
 # eval_dataset_path = os.path.join(dataset_dir, dataset_name+'_eval.pkl')
@@ -149,26 +151,18 @@ print('Eval dataset shape:', eval_data.shape)
 train_data = train_data[:int(len(train_data)/1)]
 eval_data = eval_data[:int(len(eval_data)/1)]
 
-# In[6]:
-log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/9_16/multi_track_bach'
-log_dir = os.path.join(log_root, "logdir", exp_name)
-TB_log_dir = os.path.join(log_root, 'TB_logdir', exp_name)
-console_log_dir = os.path.join(log_root, log_dir, "console")
-model_log_dir = os.path.join(log_root, 'Model_logdir', exp_name)
-data_log_dir = os.path.join(log_root, log_dir, "data")
-midi_log_dir = os.path.join(log_root, log_dir, "midi")
 
 
-def make_log_dirs(dirs):
-    for dir in dirs:
-        if not os.path.exists(dir):
-            os.makedirs(dir)
+# def make_log_dirs(dirs):
+#     for dir in dirs:
+#         if not os.path.exists(dir):
+#             os.makedirs(dir)
+#
+#
+# dirs = [log_dir, TB_log_dir, console_log_dir, model_log_dir, data_log_dir, midi_log_dir]
+# make_log_dirs(dirs)
 
-
-dirs = [log_dir, TB_log_dir, console_log_dir, model_log_dir, data_log_dir, midi_log_dir]
-make_log_dirs(dirs)
-
-max_acc_log_path = os.path.join(log_root, "logdir", "max_acc_log.txt")
+max_acc_log_path = os.path.join(log_root, "logdir", "speed_log.txt")
 
 
 def get_embedded_data2(data, maxlen, embedding_length):
@@ -241,8 +235,8 @@ def get_embedded_data(data, maxlen, embedding_length):
 
 # In[7]:
 
-train_data = train_data[:int(len(train_data))]
-eval_data = eval_data[:int(len(eval_data))]
+train_data = train_data[:int(len(train_data)/100)]
+eval_data = eval_data[:int(len(eval_data)/100)]
 
 print('Vectorization...')
 x_train, y_train = get_embedded_data(train_data, maxlen, embedding_length)
@@ -284,6 +278,7 @@ train_output_shape = vector_dim
 train_input_shape = ( maxlen, vector_dim )
 
 model = get_model_fn(input_shape=train_input_shape,output_shape = train_output_shape)
+model.load_weights(filepath = model_log_dir)
 
 def perplexity(y_trues, y_preds):
     cross_entropy = K.categorical_crossentropy(y_trues, y_preds)
@@ -473,12 +468,12 @@ print_fn("*"*20+exp_name+"*"*20)
 print_fn('x_train shape:'+str(np.shape(x_train)) )
 print_fn('y_train shape:'+str(np.shape(y_train)) )
 
-history_callback = model.fit(x_train, y_train,
-                             validation_data=(x_eval, y_eval),
-                             verbose=1,
-                             batch_size=batch_size,
-                             epochs=epochs,
-                             callbacks=[tb_callbacks, lr_scheduler, print_callback])
+# history_callback = model.fit(x_train, y_train,
+#                              validation_data=(x_eval, y_eval),
+#                              verbose=1,
+#                              batch_size=batch_size,
+#                              epochs=epochs,
+#                              callbacks=[tb_callbacks, lr_scheduler, print_callback])
 
 ##Predict and get the final result
 start_time = time.time()
@@ -487,9 +482,9 @@ speed = (time.time() - start_time ) / ( x_train.shape[0] / batch_size )
 
 y_trues = y_train
 
-final_perplexity = history_callback.history["perplexity"][epochs-1]
-final_accuracy = history_callback.history["acc"][epochs-1]
-final_cross_entropy = history_callback.history["loss"][epochs-1]
+final_perplexity = get_perplexity(y_trues, y_pred)
+final_cross_entropy = get_cross_entropy(y_trues, y_pred)
+final_accuracy = get_accuracy(y_trues, y_pred)
 model_size = model.count_params()
 
 

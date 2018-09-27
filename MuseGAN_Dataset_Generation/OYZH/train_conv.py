@@ -8,10 +8,8 @@ from keras.utils.data_utils import get_file
 from keras.callbacks import TensorBoard
 from keras.utils.np_utils import to_categorical
 
-from progressbar import ProgressBar
 
-
-import time
+import time, copy
 import numpy as np
 import random
 import sys
@@ -21,136 +19,112 @@ from math import *
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras.callbacks import LambdaCallback
 
-from my_to_midi import *
-
-import pickle as pkl
-
-from polyphony_dataset_convertor import *
-
+import my_config
+from my_midi_io import *
+import tensorflow as tf
 
 
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_integer('batch_size', 1024, 'LSTM Layer Units Number')
-tf.app.flags.DEFINE_integer('epochs', 150, 'Total epochs')
-tf.app.flags.DEFINE_integer('maxlen', 64, 'Max length of a sentence')
-tf.app.flags.DEFINE_integer('generate_length', 3200, 'Number of steps of generated music')
-tf.app.flags.DEFINE_integer('units', 512, 'LSTM Layer Units Number')
-tf.app.flags.DEFINE_integer('dense_size', 0, 'Dense Layer Size')
-tf.app.flags.DEFINE_integer('step', 4, 'Step length when building dataset')
-tf.app.flags.DEFINE_integer('embedding_length', 1, 'Embedding length')
-tf.app.flags.DEFINE_string('dataset_name', 'Bach', 'Dataset name will be the prefix of exp_name')
-tf.app.flags.DEFINE_string('dataset_dir', '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/', 'Dataset Directory, which should contain name_train.txt and name_eval.txt')
-
-# In[2]:~/sss/Mag/Mag_Data
+tf.app.flags.DEFINE_integer('maxlen', 96, '')
+tf.app.flags.DEFINE_integer('generate_length', 1000, '')
+tf.app.flags.DEFINE_integer('step', 8, '')
+tf.app.flags.DEFINE_integer('batch_size', 256, '')
+tf.app.flags.DEFINE_integer('epochs', 150, '')
 
 
-batch_size = FLAGS.batch_size
-epochs = FLAGS.epochs
-units = FLAGS.units
-dense_size = FLAGS.dense_size
+# set up config
+config = copy.deepcopy(my_config.config_5b)
+dataset = np.load(config['dataset_path'])
+print(config)
 
+
+# In[3]:
+
+# load dataset
+dataset = dataset[0:100]
+print("dataset shape:", dataset.shape)
 
 maxlen = FLAGS.maxlen
 generate_length = FLAGS.generate_length
 step = FLAGS.step
-embedding_length = FLAGS.embedding_length
-dataset_name = FLAGS.dataset_name
-dataset_dir = FLAGS.dataset_dir
+epochs = FLAGS.epochs
+batch_size = FLAGS.batch_size
+
+# feature
+reshaped_dataset = dataset.reshape((len(dataset), -1, 84, 5))
+
+print('reshaped_dataset', reshaped_dataset.shape)
 
 
-date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
+
+feature = []
+label = []
+
+for now_song in reshaped_dataset:
+    for i in range(0, len(now_song), step):
+        if (i + maxlen + 1) < len(now_song):
+            # print('now_song', now_song.shape)
+            feature.append(now_song[i:i+maxlen])
+            label.append(now_song[i+maxlen])
+            # print('feature', np.shape(feature))
+
+print('reshaped_dataset', np.shape(feature))
+# import ipdb; ipdb.set_trace()
+
+# split data to train and validation
+feature_size = len(feature)
+val_ratio = 0.1
+
+train_size = int(feature_size * (1 - val_ratio))
+
+x_train = np.array(feature[0:train_size])
+y_train = np.array(label[0:train_size])
+
+x_val = np.array(feature[train_size: feature_size])
+y_val = np.array(label[train_size: feature_size])
+
+
+# In[9]:
+
+
+print('x_train shape:', x_train.shape)
+print('y_train shape:', y_train.shape)
+print('x_val shape:', x_val.shape)
+print('y_val shape:', y_val.shape)
+
 
 
 from ConvModel import *
 from ConvResModel import *
-from ConvOtherStructureModel import *
 from keras import backend as K
-import sys
-if(len(sys.argv)!=1):
-    order = int(sys.argv[1])
-    if(order == 0):
-        name_suffix = 'A'
-        get_model_fn = get_conv1d_model_a
-    if (order == 1):
-        name_suffix = 'B'
-        get_model_fn = get_conv1d_model_b
-    if (order == 2):
-        name_suffix = 'C'
-        get_model_fn = get_conv1d_model_c
-    if (order == 3):
-        name_suffix = 'Naive'
-        get_model_fn = get_conv1d_model_naive
-    if (order == 4):
-        name_suffix = 'NaiveBig'
-        get_model_fn = get_conv1d_model_naive_big
-    if (order == 5):
-        name_suffix = 'resNetNaive'
-        get_model_fn = get_resnet_model_naive
-    if (order == 6):
-        name_suffix = 'resNetLocal'
-        get_model_fn = get_resNet_model
-    if (order == 7):
-        name_suffix = 'LSTM'
-        get_model_fn = get_lstm_model
+
+
 # model = get_conv1d_model_naive(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_resnet_model_naive(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_resNet_model(input_shape=train_input_shape,output_shape = train_output_shape)
-# get_model_fn = get_lstm_model
+# model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = resnet_v1_110(input_shape=train_input_shape,output_shape = train_output_shape)
 # get_model_fn = get_conv1d_model_b_small
 
+exp_name = 'a_MuseGan_KL'
 # get_model_fn = get_conv1d_model_naive_big
-# get_model_fn = get_conv1d_model_b
+get_model_fn = get_conv1d_model_a
 # get_model_fn = get_conv1d_model_naive
 
 # get_model_fn = get_conv1d_model
-# get_model_fn = get_resNet_model
-# name_suffix = 'resNetLocal'
-exp_name = name_suffix + "_3Layer_%s_batchS%d_epochs%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
-                                                                        batch_size, epochs, maxlen, step,
-                                                                        embedding_length, date_and_time)
-vector_dim = 259
-# train_dataset_path = os.path.join(dataset_dir, dataset_name+'_train.pkl')
-# eval_dataset_path = os.path.join(dataset_dir, dataset_name+'_eval.pkl')
-train_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_train.pkl'
-eval_dataset_path = '/home/ouyangzhihao/sss/Mag/Mag_Data/Poly/Poly_List_Datasets/Bach_new_eval.pkl'
 
-with open(train_dataset_path, "rb") as train_file:
-    train_data = pkl.load(train_file)
-    '''
-    temp = []
-    for i in train_data:
-        temp = temp + i[1:len(i)-1]
-    '''
-    train_data = np.array(train_data)
-    train_file.close()
-
-print('Train dataset shape:', train_data.shape)
-
-with open(eval_dataset_path, "rb") as eval_file:
-    eval_data = pkl.load(eval_file)
-    '''
-    temp = []
-    for i in eval_data:
-        temp = temp + i[1:len(i)-1]
-    '''
-    eval_data = np.array(eval_data)
-    eval_file.close()
-
-print('Eval dataset shape:', eval_data.shape)
-
-
+vector_dim = (84,5)
 # import ipdb; ipdb.set_trace()
 # print(train_data[0].shape)
 # print(train_data[0])
 
 
-train_data = train_data[:int(len(train_data)/1)]
-eval_data = eval_data[:int(len(eval_data)/1)]
+# train_data = train_data[0:10000]
+# eval_data = eval_data[0:2000]
 
 # In[6]:
-log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/9_16/multi_track_bach'
+log_root = '/unsullied/sharefs/ouyangzhihao/Share/LSTM/Text_Generation_Capacity/Code/Music_Research_Exp/Music_Text_Gneration/9_19/MuseGan/'
 log_dir = os.path.join(log_root, "logdir", exp_name)
 TB_log_dir = os.path.join(log_root, 'TB_logdir', exp_name)
 console_log_dir = os.path.join(log_root, log_dir, "console")
@@ -171,41 +145,6 @@ make_log_dirs(dirs)
 max_acc_log_path = os.path.join(log_root, "logdir", "max_acc_log.txt")
 
 
-def get_embedded_data2(data, maxlen, embedding_length):
-    # cut the data in semi-redundant sequences of maxlen characters
-
-    inputs = data[:len(data) - 1]
-    labels = data[1:len(data)]
-
-    print(np.shape(inputs))
-    print(np.shape(inputs[0]))
-    print((inputs[0]))
-
-    inputs = to_categorical(inputs, 259)
-    labels = to_categorical(labels, 259)
-    inputs_emb = inputs
-    label_emb = labels
-    # inputs_emb = []
-    # label_emb = []
-    # for i in range(0, len(inputs) - embedding_length, 1):
-    #     inputs_emb.append(inputs[i: i + embedding_length].flatten())
-    #     label_emb.append(labels[i + embedding_length])
-
-    inputs_maxlen = np.array(inputs_emb[0:maxlen])
-    label_maxlen = np.array(label_emb[0])
-    # for i in pbar(range(0, 10000)):
-    pbar = ProgressBar()
-    for i in pbar(range(1, len(inputs_emb) - maxlen, step)):
-        # print('inputs_maxlen shape:' , inputs_maxlen.shape)
-        # print('inputs_emb shape:', inputs_emb[i: i + maxlen].shape)
-        # import ipdb; ipdb.set_trace()
-        inputs_maxlen = np.concatenate((inputs_maxlen, inputs_emb[i: i + maxlen]) ,axis=0)
-        label_maxlen = np.append(label_maxlen, label_emb[i+maxlen])
-        # label_maxlen.append(label_emb[i+maxlen])
-
-    # return inputs_emb, label_emb
-    return np.asarray(inputs_maxlen, dtype=np.float16), np.asarray(label_maxlen,dtype=np.float16)
-
 def get_embedded_data(data, maxlen, embedding_length):
     # cut the data in semi-redundant sequences of maxlen characters
 
@@ -221,36 +160,19 @@ def get_embedded_data(data, maxlen, embedding_length):
 
     inputs_emb = []
     label_emb = []
-    # print('range', (0, len(inputs) - embedding_length, 1))
-    pbar = ProgressBar()
-    for i in pbar(range(0, len(inputs) - embedding_length, 1)):
+    for i in range(0, len(inputs) - embedding_length, 1):
         inputs_emb.append(inputs[i: i + embedding_length].flatten())
         label_emb.append(labels[i + embedding_length])
-    print('Finished embeding length embedding')
+
     inputs_maxlen = []
     label_maxlen = []
-    pbar = ProgressBar()
-    for i in pbar(range(0, len(inputs_emb) - maxlen, step)):
+    for i in range(0, len(inputs_emb) - maxlen, step):
         inputs_maxlen.append((inputs_emb[i: i + maxlen]))
         label_maxlen.append(label_emb[i+maxlen])
-    print('Finished Timestep  embedding')
+
     # return inputs_emb, label_emb
-    return np.array(inputs_maxlen), np.array(label_maxlen)
-
-
-
-# In[7]:
-
-train_data = train_data[:int(len(train_data))]
-eval_data = eval_data[:int(len(eval_data))]
-
-print('Vectorization...')
-x_train, y_train = get_embedded_data(train_data, maxlen, embedding_length)
-print('Finish train dataset vectorizing')
-x_eval, y_eval = get_embedded_data(eval_data, maxlen, embedding_length)
-print('Vectorization Finished!')
+    return np.asarray(inputs_maxlen, dtype=np.float16), np.asarray(label_maxlen,dtype=np.float16)
 # In[8]:
-
 
 
 def print_fn(str):
@@ -262,7 +184,7 @@ def print_fn(str):
 def lr_schedule(epoch):
     # Learning Rate Schedule
 
-    lr = 1e-3
+    lr = 1e-2
     if epoch >= epochs * 0.9:
         lr *= 0.5e-3
     elif epoch >= epochs * 0.8:
@@ -281,9 +203,9 @@ print_fn('Build model...')
 
 
 train_output_shape = vector_dim
-train_input_shape = ( maxlen, vector_dim )
+train_input_shape = ( maxlen, vector_dim[0], vector_dim[1] )
 
-model = get_model_fn(input_shape=train_input_shape,output_shape = train_output_shape)
+model = get_model_fn(input_shape=train_input_shape,output_shape = train_output_shape, timestep=maxlen)
 
 def perplexity(y_trues, y_preds):
     cross_entropy = K.categorical_crossentropy(y_trues, y_preds)
@@ -295,23 +217,12 @@ def perplexity(y_trues, y_preds):
     return perplexity
 
 optimizer = Adam(lr=lr_schedule(0))
-model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy',perplexity])
+# model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['accuracy',perplexity])
+model.compile(loss='kullback_leibler_divergence', optimizer=optimizer, metrics=['accuracy',perplexity])
+
+
 model.summary(print_fn=print_fn)
 
-# In[11]:
-
-
-def sample(preds, temperature=1.0):
-    # helper function to sample an index from a probability array
-    preds = np.asarray(preds).astype('float64')
-    preds = np.log(preds) / temperature
-    exp_preds = np.exp(preds)
-    preds = exp_preds / np.sum(exp_preds)
-    probas = np.random.multinomial(1, preds, 1)
-    return np.argmax(probas)
-
-
-# In[12]:
 
 
 def generate_music(epoch, data, diversity, start_index, is_train=False):
@@ -418,17 +329,10 @@ def generate_more_midi(id, data, diversity, start_index, eval_input=False):
 
     print_fn("Write %s.midi to %s" % (log_name, midi_log_dir))
 
+
 converage_epoch = -1
 def on_epoch_end(epoch, logs):
-    # Function invoked at end of each epoch. Prints generated data.
-    if(epoch+1 == epochs):
-        for i in range(10):
-            start_index = random.randint(0, len(train_data) - maxlen - 1)
-            generate_more_midi(i,train_data,diversity=0.2,start_index=start_index)
-        for i in range(10):
-            start_index = random.randint(0, len(eval_data) - maxlen - 1)
-            generate_more_midi(i, eval_data, diversity=0.2, start_index=start_index, eval_input = True)
-
+    #OYZH
     global converage_epoch
     if(converage_epoch < 0.0 ):
         if(logs['acc'] > 0.85):
@@ -437,22 +341,34 @@ def on_epoch_end(epoch, logs):
         return
     elif(epoch <= epochs * 3 / 5):
         return
+    ##
+    start_index = random.randint(0, len(x_train) - 1)
+    x_pred = np.array([x_train[start_index]])
+    result = copy.deepcopy(x_pred)
 
-    print_fn("")
-    print_fn('----- Generating Music after Epoch: %d' % epoch)
+    for i in range(generate_length):
+        y_pred = model.predict(x_pred, verbose=0)
+        # print("y_pred shape:", y_pred.shape)
+        result = np.append(result, [y_pred], axis=1)
+        # print("before x_pred shape:", x_pred[:,1:maxlen,:,:].shape)
+        x_pred = np.append(x_pred[:, 1:maxlen, :, :], [y_pred], axis=1)
 
-    start_index = random.randint(0, len(train_data) - maxlen - 1)
+    # print('result shape:',result.shape)
+    result = np.array(result, dtype=np.bool_)
+    # print('result:',result)
 
-    # baseline_music(epoch=epoch, data=eval_data, start_index=0)
-    # baseline_music(epoch=epoch, data=eval_data, start_index=start_index)
-    # baseline_music(epoch=epoch, data=train_data, start_index=start_index, is_train=True)
+    need_length = (generate_length + maxlen) // (96 * 4) * (96 * 4)
+    result = result[0]
+    result = result[0:need_length]
 
-    for diversity in [0.2, 1.2]:
-        # generate_music(epoch=epoch, data=eval_data, diversity=diversity, start_index=0)
-        # generate_music(epoch=epoch, data=eval_data, diversity=diversity, start_index=start_index)
-        generate_music(epoch=epoch, data=train_data, diversity=diversity, start_index=start_index, is_train=True)
+    # now is stard piano roll
+    # print('result shape:', result.shape)
+    result = result.reshape((-1, 4, 96, 84, 5))
+    # print('result final shape:', result.shape)
 
-
+    midi_file_name = 'test_train_%d.mid' % (epoch + 1)
+    midi_path = os.path.join(midi_log_dir,midi_file_name)
+    save_midi(midi_path, result, config)
 
 # In[14]:
 
@@ -474,7 +390,7 @@ print_fn('x_train shape:'+str(np.shape(x_train)) )
 print_fn('y_train shape:'+str(np.shape(y_train)) )
 
 history_callback = model.fit(x_train, y_train,
-                             validation_data=(x_eval, y_eval),
+                             validation_data=(x_val, y_val),
                              verbose=1,
                              batch_size=batch_size,
                              epochs=epochs,
@@ -500,28 +416,3 @@ max_acc_log_line = "%s\t%d\t%f\t%f\t%f\t%d\t%f" % (exp_name, model_size, final_a
                                                    converage_epoch, final_perplexity)
 
 print(max_acc_log_line, file=open(max_acc_log_path, 'a'))
-
-
-'''
-
-
-rlaunch --cpu=4 --gpu=1 --memory=16000 --preemptible=no bash
-
-
-python3 polyphony_train.py --batch_size=512 \
-    --epochs=20 \
-    --units=512 \
-    --maxlen=16 \
-    --generate_length=400 \
-    --dense_size=0 \
-    --step=1 \
-    --embedding_length=1 \
-    --dataset_name=Bach_new \
-    --dataset_dir=datasets/Bach/
-
-
-
-
-rlanuch --cpu=4 -- python3 --
-
-'''
