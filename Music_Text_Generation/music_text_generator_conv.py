@@ -76,16 +76,44 @@ dataset_dir = FLAGS.dataset_dir
 
 date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
 
-exp_name = "B_3LayerCNN_Local2_%s_batchS%d_epochs%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
+if(len(sys.argv)!=1):
+    order = int(sys.argv[1])
+    if(order == 0):
+        name_suffix = 'A'
+        get_model_fn = get_conv1d_model_a
+    if (order == 1):
+        name_suffix = 'B'
+        get_model_fn = get_conv1d_model_b
+    if (order == 2):
+        name_suffix = 'C'
+        get_model_fn = get_conv1d_model_c
+    if (order == 3):
+        name_suffix = 'Naive'
+        get_model_fn = get_conv1d_model_naive
+    if (order == 4):
+        name_suffix = 'NaiveBig'
+        get_model_fn = get_conv1d_model_naive_big
+    if (order == 5):
+        name_suffix = 'resNetNaive'
+        get_model_fn = get_resnet_model_naive
+    if (order == 6):
+        name_suffix = 'resNetLocal'
+        get_model_fn = get_resNet_model
+    if (order == 7):
+        name_suffix = 'LSTM'
+        get_model_fn = get_lstm_model
+
+
+exp_name = name_suffix + "_%s_batchS%d_epochs%d_maxL%d_step%d_embeddingL%d_%s" % (dataset_name,
                                                                         batch_size, epochs, maxlen, step,
                                                                         embedding_length, date_and_time)
 
 
 # model = get_conv1d_model_naive(input_shape=train_input_shape,output_shape = train_output_shape)
 # model = get_conv1d_model(input_shape=train_input_shape,output_shape = train_output_shape)
-# model = get_resnet_model_naive(input_shape=train_input_shape,output_shape = train_output_shape)
-# model = get_resNet_model(input_shape=train_input_shape,output_shape = train_output_shape)
-# model = get_lstm_model(input_shape=train_input_shape,output_shape = train_output_shape)
+# model = get_resnet_model_naive
+# model = get_resNet_model
+# model = get_lstm_model
 # model = resnet_v1_110(input_shape=train_input_shape,output_shape = train_output_shape)
 # get_model_fn = resnet_v1_110
 # get_model_fn = get_conv1d_model_old
@@ -93,7 +121,7 @@ exp_name = "B_3LayerCNN_Local2_%s_batchS%d_epochs%d_maxL%d_step%d_embeddingL%d_%
 # get_model_fn = get_conv1d_model_b_small
 
 # get_model_fn = get_conv1d_model_naive_big
-get_model_fn = get_conv1d_model_b
+# get_model_fn = get_conv1d_model_b
 # get_model_fn = get_conv1d_model_naive
 
 # In[ ]:
